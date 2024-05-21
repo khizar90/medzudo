@@ -25,7 +25,14 @@ return new class extends Migration
             $table->string('type');
             $table->string('mode');
             $table->string('price');
+            $table->string('price');
             $table->longText('description');
+            $table->string('website_link')->default('');
+            $table->string('linkedin_link')->default('');
+            $table->string('instagram_link')->default('');
+            $table->string('facebook_link')->default('');
+            $table->string('youtube_link')->default('');
+            $table->string('tiktok_link')->default('');
             $table->timestamps();
         });
     }

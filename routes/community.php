@@ -5,4 +5,5 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('create', [CommunityController::class, 'create']);
+    Route::post('edit', [CommunityController::class, 'edit']);
 });
