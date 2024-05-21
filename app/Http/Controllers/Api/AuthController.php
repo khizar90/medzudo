@@ -132,6 +132,7 @@ class AuthController extends Controller
         } else {
             $newuser->interest_add = false;
         }
+        $newuser->token = $newuser->createToken('Register')->plainTextToken;
         return response()->json([
             'status' => true,
             'action' => 'User register successfully',
@@ -158,6 +159,7 @@ class AuthController extends Controller
                 $userdevice->timezone = $request->timezone ?? 'No Time';
                 $userdevice->token = $request->fcm_token ?? 'No tocken';
                 $userdevice->save();
+                $user->token = $user->createToken('Login')->plainTextToken;
 
                 return response()->json([
                     'status' => true,
@@ -286,7 +288,7 @@ class AuthController extends Controller
     public function logout(LogoutRequest $request)
     {
         UserDevice::where('user_id', $request->user_id)->where('device_id', $request->device_id)->delete();
-
+        $request->user()->currentAccessToken()->delete();
         return response()->json([
             'status' => true,
             'action' => 'User logged out'
@@ -298,8 +300,11 @@ class AuthController extends Controller
         $user = User::find($request->user_id);
         if ($user) {
             if (Hash::check($request->password, $user->password)) {
-                Follow::where('user_id',$request->user_id)->orWhere('follow_id',$request->user_id)->delete();
+                Follow::where('user_id', $request->user_id)->orWhere('follow_id', $request->user_id)->delete();
+                $user->tokens()->delete();
+
                 $user->delete();
+
                 return response()->json([
                     'status' => true,
                     'action' => "Account deleted",
@@ -368,7 +373,8 @@ class AuthController extends Controller
                 $user->image = $path;
             }
             $user->save();
-
+            $token = $request->bearerToken();
+            $user->token = $token;
 
             return response()->json([
                 'status' => true,
@@ -383,13 +389,15 @@ class AuthController extends Controller
         ]);
     }
 
-    public function removeImage($user_id)
+    public function removeImage(Request $request, $user_id)
     {
         $user = User::find($user_id);
         if ($user) {
             $user->image = '';
 
             $user->save();
+            $token = $request->bearerToken();
+            $user->token = $token;
             return response()->json([
                 'status' => true,
                 'action' => "Image remove",
@@ -637,6 +645,14 @@ class AuthController extends Controller
             $user->save();
 
             $user->multi_images = UserGallery::where('user_id', $user->uuid)->get();
+            $interest = UserInterest::where('user_id', $user->uuid)->first();
+            if ($interest) {
+                $user->interest_add = true;
+            } else {
+                $user->interest_add = false;
+            }
+            $token = $request->bearerToken();
+            $user->token = $token;
             return response()->json([
                 'status' => true,
                 'action' => "Profile edit",

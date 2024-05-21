@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class User extends Model
 {
-    use HasFactory, HasUuids;
+    use HasApiTokens,HasFactory, HasUuids;
 
     protected $primaryKey = 'uuid';
 
