@@ -12,6 +12,7 @@ use App\Models\CommunitySponsor;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use stdClass;
 
 class CommunityController extends Controller
 {
@@ -182,6 +183,117 @@ class CommunityController extends Controller
         return response()->json([
             'status' => true,
             'action' =>  'Community Edit',
+        ]);
+    }
+    public function listSponsor(Request $request,$commmunity_id){
+
+        $commmunity = Community::find($commmunity_id);
+        if($commmunity){
+            $list = CommunitySponsor::latest()->get();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Community Sponsors',
+                'data' => $list
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Community not Found',
+        ]);
+
+    }
+
+    public function deleteSponsor(Request $request,$sponsor_id){
+        $sponsor = CommunitySponsor::find($sponsor_id);
+        if($sponsor){
+            $sponsor->delete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Sponsor Deleted',
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Sponsor not Found',
+        ]);
+    }
+
+    public function deletePicture(Request $request,$picture_id){
+        $sponsor = CommunityPicture::find($picture_id);
+        if($sponsor){
+            $sponsor->delete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Picture Deleted',
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Picture not Found',
+        ]);
+    }
+
+    public function home(Request $request){
+        $user = User::find($request->user()->uuid);
+        $categories = Category::select('id','name','image')->where('type','interest')->get();
+        $myCommunities = Community::where('user_id',$user->uuid)->latest()->limit(12)->get();
+
+        foreach($myCommunities as $my){
+            $my->participant_count = 0;
+            $my->participants = [];
+        }
+
+        $allCommunities = Community::where('type','Public')->where('user_id', '!=',$user->uuid)->latest()->paginate(12);
+
+        foreach($allCommunities as $all){
+            $all->participant_count = 0;
+            $all->participants = [];
+        }
+        return response()->json([
+            'status' => true,
+            'action' =>  'Home',
+            'data' =>  array(
+                'request_count' => 0,
+                'categories' => $categories,
+                'my_community' => $myCommunities,
+                'all_community' => $allCommunities,
+            ),
+        ]);
+    }
+
+    public function search(Request $request){
+        $user = User::find($request->user()->uuid);
+        if ($request->keyword != null || $request->keyword != '') {
+            $communities  = Community::where('user_id','!=',$user->uuid)->where("name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
+
+            foreach($communities as $all){
+                $all->participant_count = 0;
+                $all->participants = [];
+            }
+            return response()->json([
+                'status' => true,
+                'action' =>  "Communities",
+                'data' => $communities
+            ]);
+        }
+        $communities = new stdClass();
+        return response()->json([
+            'status' => true,
+            'action' =>  "Communities",
+            'data' => $communities
+        ]);
+    }
+    public function categorySearch(Request $request,$category_id){
+        $communityIds = CommunityCategories::where('category_id',$category_id)->pluck('community_id');
+        $communities = Community::whereIn('id',$communityIds)->orderBy('id','desc')->paginate(12);
+        foreach($communities as $all){
+            $all->participant_count = 0;
+            $all->participants = [];
+        }
+        return response()->json([
+            'status' => true,
+            'action' =>  "Communities",
+            'data' => $communities
         ]);
     }
 }
