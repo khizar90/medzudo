@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Community\CreateCommunityRequest;
+use App\Models\BlockList;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\CommunityCategories;
+use App\Models\CommunityJoinRequest;
 use App\Models\CommunityPicture;
 use App\Models\CommunitySponsor;
+use App\Models\Follow;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -139,7 +142,6 @@ class CommunityController extends Controller
                     $picture->picture = $path;
                 }
                 $picture->save();
-
             }
         }
 
@@ -185,10 +187,11 @@ class CommunityController extends Controller
             'action' =>  'Community Edit',
         ]);
     }
-    public function listSponsor(Request $request,$commmunity_id){
+    public function listSponsor(Request $request, $community_id)
+    {
 
-        $commmunity = Community::find($commmunity_id);
-        if($commmunity){
+        $commmunity = Community::find($community_id);
+        if ($commmunity) {
             $list = CommunitySponsor::latest()->get();
             return response()->json([
                 'status' => true,
@@ -200,12 +203,12 @@ class CommunityController extends Controller
             'status' => false,
             'action' =>  'Community not Found',
         ]);
-
     }
 
-    public function deleteSponsor(Request $request,$sponsor_id){
+    public function deleteSponsor(Request $request, $sponsor_id)
+    {
         $sponsor = CommunitySponsor::find($sponsor_id);
-        if($sponsor){
+        if ($sponsor) {
             $sponsor->delete();
             return response()->json([
                 'status' => true,
@@ -218,9 +221,10 @@ class CommunityController extends Controller
         ]);
     }
 
-    public function deletePicture(Request $request,$picture_id){
+    public function deletePicture(Request $request, $picture_id)
+    {
         $sponsor = CommunityPicture::find($picture_id);
-        if($sponsor){
+        if ($sponsor) {
             $sponsor->delete();
             return response()->json([
                 'status' => true,
@@ -233,27 +237,30 @@ class CommunityController extends Controller
         ]);
     }
 
-    public function home(Request $request){
+    public function home(Request $request)
+    {
         $user = User::find($request->user()->uuid);
-        $categories = Category::select('id','name','image')->where('type','interest')->get();
-        $myCommunities = Community::where('user_id',$user->uuid)->latest()->limit(12)->get();
+        $categories = Category::select('id', 'name', 'image')->where('type', 'interest')->get();
+        $myCommunities = Community::where('user_id', $user->uuid)->latest()->limit(12)->get();
 
-        foreach($myCommunities as $my){
+        foreach ($myCommunities as $my) {
             $my->participant_count = 0;
             $my->participants = [];
         }
 
-        $allCommunities = Community::where('type','Public')->where('user_id', '!=',$user->uuid)->latest()->paginate(12);
+        $allCommunities = Community::where('type', 'Public')->where('user_id', '!=', $user->uuid)->latest()->paginate(12);
 
-        foreach($allCommunities as $all){
+        foreach ($allCommunities as $all) {
             $all->participant_count = 0;
             $all->participants = [];
         }
+
+        $request_count = CommunityJoinRequest::where('user_id', $user->uuid)->where('status', 'penidng')->count();
         return response()->json([
             'status' => true,
             'action' =>  'Home',
             'data' =>  array(
-                'request_count' => 0,
+                'request_count' => $request_count,
                 'categories' => $categories,
                 'my_community' => $myCommunities,
                 'all_community' => $allCommunities,
@@ -261,12 +268,25 @@ class CommunityController extends Controller
         ]);
     }
 
-    public function search(Request $request){
+    public function list(Request $request, $type)
+    {
+        $user = User::find($request->user()->uuid);
+        if ($type == 'my-communities') {
+            $communities = Community::where('user_id', $user->uuid)->latest()->paginate(12);
+        }
+        return response()->json([
+            'status' => true,
+            'action' =>  "Communities",
+            'data' => $communities
+        ]);
+    }
+    public function search(Request $request)
+    {
         $user = User::find($request->user()->uuid);
         if ($request->keyword != null || $request->keyword != '') {
-            $communities  = Community::where('user_id','!=',$user->uuid)->where("name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
+            $communities  = Community::where('user_id', '!=', $user->uuid)->where("name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
 
-            foreach($communities as $all){
+            foreach ($communities as $all) {
                 $all->participant_count = 0;
                 $all->participants = [];
             }
@@ -283,10 +303,11 @@ class CommunityController extends Controller
             'data' => $communities
         ]);
     }
-    public function categorySearch(Request $request,$category_id){
-        $communityIds = CommunityCategories::where('category_id',$category_id)->pluck('community_id');
-        $communities = Community::whereIn('id',$communityIds)->orderBy('id','desc')->paginate(12);
-        foreach($communities as $all){
+    public function categorySearch(Request $request, $category_id)
+    {
+        $communityIds = CommunityCategories::where('category_id', $category_id)->pluck('community_id');
+        $communities = Community::whereIn('id', $communityIds)->orderBy('id', 'desc')->paginate(12);
+        foreach ($communities as $all) {
             $all->participant_count = 0;
             $all->participants = [];
         }
@@ -295,5 +316,126 @@ class CommunityController extends Controller
             'action' =>  "Communities",
             'data' => $communities
         ]);
+    }
+
+    public function listUser(Request $request, $community_id)
+    {
+        $user = User::find($request->user()->uuid);
+        if ($user) {
+
+            $blocked = BlockList::where('user_id', $user->uuid)->pluck('block_id');
+            $blocked1 = BlockList::where('block_id', $user->uuid)->pluck('user_id');
+            $blocked = $blocked->merge($blocked1);
+
+            $followingIds = Follow::where('user_id', $user->uuid)->pluck('follow_id');
+
+            $followingIds = Follow::where('user_id', $user->uuid)->whereNotIn('follow_id', $blocked)->pluck('follow_id')->toArray();
+
+            $followings = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $followingIds)->paginate(12);
+            if (count($followings) > 0) {
+
+                foreach ($followings as $item) {
+                    $find = CommunityJoinRequest::where('user_id', $item->uuid)->where('community_id', $community_id)->first();
+                    if ($find) {
+                        $item->is_invited = true;
+                    } else {
+                        $item->is_invited = false;
+                    }
+                }
+                return response()->json([
+                    'status' => true,
+                    'action' =>  'Following',
+                    'data' => $followings
+                ]);
+            } else {
+                $users = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', '!=', $user->uuid)->whereNotIn('follow_id', $blocked)->paginate(12);
+                foreach ($users as $item1) {
+                    $find = CommunityJoinRequest::where('user_id', $item1->uuid)->where('community_id', $community_id)->first();
+                    if ($find) {
+                        $item1->is_invited = true;
+                    } else {
+                        $item1->is_invited = false;
+                    }
+                }
+                return response()->json([
+                    'status' => true,
+                    'action' =>  'Users',
+                    'data' => $users
+                ]);
+            }
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'User not found',
+        ]);
+    }
+
+    public function sendInvite(Request $request, $community_id, $to_id)
+    {
+        $user = User::find($request->user()->uuid);
+        $find = CommunityJoinRequest::where('user_id', $to_id)->where('community_id', $community_id)->where('status', 'pending')->first();
+        if ($find) {
+            $find->delete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Invite Deleted',
+            ]);
+        }
+
+        $create = new CommunityJoinRequest();
+        $create->user_id = $to_id;
+        $create->community_id = $community_id;
+        $create->save();
+        return response()->json([
+            'status' => true,
+            'action' =>  'Invite Send',
+        ]);
+    }
+
+    public function searchUsers(Request $request, $community_id)
+    {
+        $user = User::find($request->user()->uuid);
+        $blocked = BlockList::where('user_id', $user->uuid)->pluck('block_id');
+        $blocked1 = Blocklist::where('block_id', $user->uuid)->pluck('user_id');
+        $blocked = $blocked->merge($blocked1);
+
+        if ($request->keyword != null || $request->keyword != '') {
+
+            $users  = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereNotIn('uuid', $blocked)->where('uuid', '!=', $user->uuid)->where("first_name", "LIKE", "%" . $request->keyword . "%")->orWhere("last_name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
+
+            foreach ($users as $item1) {
+                $find = CommunityJoinRequest::where('user_id', $item1->uuid)->where('community_id', $community_id)->first();
+                if ($find) {
+                    $item1->is_invited = true;
+                } else {
+                    $item1->is_invited = false;
+                }
+            }
+            return response()->json([
+                'status' => true,
+                'action' =>  'Search Result',
+                'data' => $users
+            ]);
+        } else {
+            $users = new stdClass();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Search Result',
+                'data' => $users
+            ]);
+        }
+    }
+
+    public function InvitedCommunity(Request $request)
+    {
+        $user = User::find($request->user()->uuid);
+        $communityIds = CommunityJoinRequest::where('user_id',$user->uuid)->where('status','pending')->pluck('community_id');
+        $communities = Community::whereIn('id', $communityIds)->orderBy('id', 'desc')->paginate(12);
+        return response()->json([
+            'status' => true,
+            'action' =>  'Communities',
+            'data' => $communities
+        ]);
+
     }
 }
