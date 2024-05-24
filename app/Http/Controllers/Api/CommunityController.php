@@ -193,6 +193,7 @@ class CommunityController extends Controller
         $commmunity = Community::find($community_id);
         if ($commmunity) {
             $list = CommunitySponsor::latest()->get();
+
             return response()->json([
                 'status' => true,
                 'action' =>  'Community Sponsors',
@@ -244,13 +245,18 @@ class CommunityController extends Controller
         $myCommunities = Community::where('user_id', $user->uuid)->latest()->limit(12)->get();
 
         foreach ($myCommunities as $my) {
+            $pictures = CommunityPicture::where('community_id', $my->id)->get();
+            $my->pictures = $pictures;
             $my->participant_count = 0;
             $my->participants = [];
         }
 
+
         $allCommunities = Community::where('type', 'Public')->where('user_id', '!=', $user->uuid)->latest()->paginate(12);
 
         foreach ($allCommunities as $all) {
+            $pictures = CommunityPicture::where('community_id', $all->id)->get();
+            $all->pictures = $pictures;
             $all->participant_count = 0;
             $all->participants = [];
         }
@@ -273,6 +279,10 @@ class CommunityController extends Controller
         $user = User::find($request->user()->uuid);
         if ($type == 'my-communities') {
             $communities = Community::where('user_id', $user->uuid)->latest()->paginate(12);
+            foreach ($communities as $item) {
+                $pictures = CommunityPicture::where('community_id', $item->id)->get();
+                $item->pictures = $pictures;
+            }
         }
         return response()->json([
             'status' => true,
@@ -287,6 +297,8 @@ class CommunityController extends Controller
             $communities  = Community::where('user_id', '!=', $user->uuid)->where("name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
 
             foreach ($communities as $all) {
+                $pictures = CommunityPicture::where('community_id', $all->id)->get();
+                $all->pictures = $pictures;
                 $all->participant_count = 0;
                 $all->participants = [];
             }
@@ -308,6 +320,8 @@ class CommunityController extends Controller
         $communityIds = CommunityCategories::where('category_id', $category_id)->pluck('community_id');
         $communities = Community::whereIn('id', $communityIds)->orderBy('id', 'desc')->paginate(12);
         foreach ($communities as $all) {
+            $pictures = CommunityPicture::where('community_id', $all->id)->get();
+            $all->pictures = $pictures;
             $all->participant_count = 0;
             $all->participants = [];
         }
@@ -429,13 +443,16 @@ class CommunityController extends Controller
     public function InvitedCommunity(Request $request)
     {
         $user = User::find($request->user()->uuid);
-        $communityIds = CommunityJoinRequest::where('user_id',$user->uuid)->where('status','pending')->pluck('community_id');
+        $communityIds = CommunityJoinRequest::where('user_id', $user->uuid)->where('status', 'pending')->pluck('community_id');
         $communities = Community::whereIn('id', $communityIds)->orderBy('id', 'desc')->paginate(12);
+        foreach($communities as $item){
+            $pictures = CommunityPicture::where('community_id',$item->id)->get();
+            $item->pictures = $pictures;
+        }
         return response()->json([
             'status' => true,
             'action' =>  'Communities',
             'data' => $communities
         ]);
-
     }
 }
