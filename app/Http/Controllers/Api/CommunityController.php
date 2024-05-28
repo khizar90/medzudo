@@ -3,13 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Community\CommunityAddFolderRequest;
+use App\Http\Requests\Api\Community\CommunityAddMediaRequest;
+use App\Http\Requests\Api\Community\CommunityEditFolderRequest;
 use App\Http\Requests\Api\Community\CreateCommunityRequest;
 use App\Models\BlockList;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\CommunityCategories;
+use App\Models\CommunityFolder;
 use App\Models\CommunityJoinRequest;
+use App\Models\CommunityMedia;
 use App\Models\CommunityPicture;
+use App\Models\CommunityPinnedMedia;
 use App\Models\CommunitySponsor;
 use App\Models\Follow;
 use App\Models\User;
@@ -190,8 +196,8 @@ class CommunityController extends Controller
     public function listSponsor(Request $request, $community_id)
     {
 
-        $commmunity = Community::find($community_id);
-        if ($commmunity) {
+        $community = Community::find($community_id);
+        if ($community) {
             $list = CommunitySponsor::latest()->get();
 
             return response()->json([
@@ -245,6 +251,9 @@ class CommunityController extends Controller
         $myCommunities = Community::where('user_id', $user->uuid)->latest()->limit(12)->get();
 
         foreach ($myCommunities as $my) {
+            $categoriesIds  = explode(',', $my->categories);
+            $categories = Category::whereIn('id', $categoriesIds)->get();
+            $my->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $my->id)->get();
             $my->pictures = $pictures;
             $my->participant_count = 0;
@@ -255,6 +264,9 @@ class CommunityController extends Controller
         $allCommunities = Community::where('type', 'Public')->where('user_id', '!=', $user->uuid)->latest()->paginate(12);
 
         foreach ($allCommunities as $all) {
+            $categoriesIds  = explode(',', $all->categories);
+            $categories = Category::whereIn('id', $categoriesIds)->get();
+            $all->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $all->id)->get();
             $all->pictures = $pictures;
             $all->participant_count = 0;
@@ -280,6 +292,9 @@ class CommunityController extends Controller
         if ($type == 'my-communities') {
             $communities = Community::where('user_id', $user->uuid)->latest()->paginate(12);
             foreach ($communities as $item) {
+                $categoriesIds  = explode(',', $item->categories);
+                $categories = Category::whereIn('id', $categoriesIds)->get();
+                $item->categories = $categories;
                 $pictures = CommunityPicture::where('community_id', $item->id)->get();
                 $item->pictures = $pictures;
             }
@@ -297,6 +312,9 @@ class CommunityController extends Controller
             $communities  = Community::where('user_id', '!=', $user->uuid)->where("name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
 
             foreach ($communities as $all) {
+                $categoriesIds  = explode(',', $all->categories);
+                $categories = Category::whereIn('id', $categoriesIds)->get();
+                $all->categories = $categories;
                 $pictures = CommunityPicture::where('community_id', $all->id)->get();
                 $all->pictures = $pictures;
                 $all->participant_count = 0;
@@ -320,6 +338,9 @@ class CommunityController extends Controller
         $communityIds = CommunityCategories::where('category_id', $category_id)->pluck('community_id');
         $communities = Community::whereIn('id', $communityIds)->orderBy('id', 'desc')->paginate(12);
         foreach ($communities as $all) {
+            $categoriesIds  = explode(',', $all->categories);
+            $categories = Category::whereIn('id', $categoriesIds)->get();
+            $all->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $all->id)->get();
             $all->pictures = $pictures;
             $all->participant_count = 0;
@@ -445,14 +466,226 @@ class CommunityController extends Controller
         $user = User::find($request->user()->uuid);
         $communityIds = CommunityJoinRequest::where('user_id', $user->uuid)->where('status', 'pending')->pluck('community_id');
         $communities = Community::whereIn('id', $communityIds)->orderBy('id', 'desc')->paginate(12);
-        foreach($communities as $item){
-            $pictures = CommunityPicture::where('community_id',$item->id)->get();
+        foreach ($communities as $item) {
+            $categoriesIds  = explode(',', $item->categories);
+            $categories = Category::whereIn('id', $categoriesIds)->get();
+            $item->categories = $categories;
+            $pictures = CommunityPicture::where('community_id', $item->id)->get();
             $item->pictures = $pictures;
         }
         return response()->json([
             'status' => true,
             'action' =>  'Communities',
             'data' => $communities
+        ]);
+    }
+
+    public function delete(Request $request, $id)
+    {
+        $find = Community::find($id);
+        if ($find) {
+            $find->delete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Community Deleted!',
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Community not found',
+        ]);
+    }
+
+    public function addMedia(CommunityAddMediaRequest $request)
+    {
+        $create = new CommunityMedia();
+        $file = $request->file('media');
+        $community = Community::find($request->community_id);
+        $path = Storage::disk('local')->put('user/' . $community->user_id . '/community/media', $file);
+        $create->media = '/uploads/' . $path;
+        $create->tagline = $request->tagline;
+        $create->community_id = $request->community_id;
+        $create->type = $request->type;
+        $create->folder_id = $request->folder_id ?: 0;
+        $create->save();
+        return response()->json([
+            'status' => true,
+            'action' =>  'Community media Added',
+        ]);
+    }
+
+    public function deleteMedia($media_id)
+    {
+        $find = CommunityMedia::find($media_id);
+        if ($find) {
+            $find->delete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Community media Deleted!',
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Community media not found',
+        ]);
+    }
+
+    public function addFolder(CommunityAddFolderRequest $request)
+    {
+        $create = new CommunityFolder();
+        $create->community_id = $request->community_id;
+        $create->name = $request->name;
+        $create->price = $request->price ?: 0;
+        $create->save();
+        return response()->json([
+            'status' => true,
+            'action' =>  'Community Folder Added',
+        ]);
+    }
+
+    public function folderMedia($folder_id)
+    {
+        $media = CommunityMedia::where('folder_id', $folder_id)->paginate(12);
+        return response()->json([
+            'status' => true,
+            'action' =>  'Community Folder Media',
+            'data' => $media
+        ]);
+    }
+    public function editFolder(CommunityEditFolderRequest $request)
+    {
+        $folder = CommunityFolder::find($request->folder_id);
+        if ($request->has('name')) {
+            $folder->name = $request->name;
+        }
+
+        if ($request->has('price')) {
+            $folder->price = $request->price;
+        }
+        $folder->save();
+        return response()->json([
+            'status' => true,
+            'action' =>  'Community Folder Edit',
+        ]);
+    }
+    public function deleteFolder($folder_id)
+    {
+        $find = CommunityFolder::find($folder_id);
+        if ($find) {
+            CommunityMedia::where('folder_id', $folder_id)->delete();
+            $find->delete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Community Folder Deleted!',
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Community Folder not found',
+        ]);
+    }
+
+    public function pinMedia($media_id, $community_id)
+    {
+
+        $community = Community::find($community_id);
+        if ($community) {
+            $media = CommunityMedia::find($media_id);
+            if ($media) {
+                $find = CommunityPinnedMedia::where('community_id', $community_id)->where('media_id', $media_id)->first();
+                if ($find) {
+                    $find->delete();
+                    return response()->json([
+                        'status' => true,
+                        'action' =>  'Un Pinned',
+                    ]);
+                }
+                $create = new CommunityPinnedMedia();
+                $create->community_id = $community_id;
+                $create->media_id = $media_id;
+                $create->save();
+                return response()->json([
+                    'status' => true,
+                    'action' =>  'Pinned',
+                ]);
+            }
+            return response()->json([
+                'status' => false,
+                'action' =>  'Community media not found',
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Community not found',
+        ]);
+    }
+
+    public function communitMediaHome($community_id)
+    {
+        $community = Community::find($community_id);
+        if ($community) {
+            $pinnedMedia = [];
+            $pinnedMediaIds = CommunityPinnedMedia::where('community_id', $community_id)->orderBy('id', 'desc')->limit(12)->pluck('media_id');
+            foreach ($pinnedMediaIds as $id) {
+                $media = CommunityMedia::find($id);
+                $pinnedMedia[] = $media;
+            }
+            $folders = CommunityFolder::where('community_id', $community_id)->limit(12)->get();
+            $media = CommunityMedia::where('community_id', $community_id)->where('folder_id', 0)->latest()->paginate(12);
+            return response()->json([
+                'status' => true,
+                'action' =>  'Community Media Home',
+                'data' => array(
+                    'pinned_media' => $pinnedMedia,
+                    'folders' => $folders,
+                    'media' => $media
+                )
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Community not found',
+        ]);
+    }
+    public function listFolder(Request $request,$type, $community_id)
+    {
+        $community = Community::find($community_id);
+
+        if ($community) {
+            if ($type == 'folders') {
+                $folders = CommunityFolder::where('community_id', $community_id)->paginate(12);
+                return response()->json([
+                    'status' => true,
+                    'action' =>  'Community Folders',
+                    'data' => $folders
+                ]);
+            }
+            if ($type == 'pinned') {
+
+                $pinnedMedia = [];
+                $pinnedMediaIds = CommunityPinnedMedia::where('community_id', $community_id)->orderBy('id', 'desc')->limit(12)->pluck('media_id');
+                foreach ($pinnedMediaIds as $id) {
+                    $media = CommunityMedia::find($id);
+                    $pinnedMedia[] = $media;
+                }
+
+                $count  = count($pinnedMedia);
+                $pinnedMedia = collect($pinnedMedia);
+                $pinnedMedia = $pinnedMedia->forPage($request->page, 12)->values();
+    
+                return response()->json([
+                    'status' => true,
+                    'action' =>  'Community Pinned Media',
+                    'data' => array(
+                        'data' => $pinnedMedia,
+                        'total' => $count
+                    )
+                ]);
+            }
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Community not found',
         ]);
     }
 }
