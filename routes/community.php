@@ -26,6 +26,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('pin/media/{media_id}/{community_id}', [CommunityController::class, 'pinMedia']);
     Route::get('folder/media/{folder_id}', [CommunityController::class, 'folderMedia']);
     Route::get('media/home/{community_id}', [CommunityController::class, 'communitMediaHome']);
-    Route::get('media/list/folders/{type}/{community_id}', [CommunityController::class, 'listFolder']);
+    Route::get('media/list/{type}/{community_id}', [CommunityController::class, 'listFolder']);
 
 });
