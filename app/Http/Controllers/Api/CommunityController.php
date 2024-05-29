@@ -680,7 +680,7 @@ class CommunityController extends Controller
             if ($type == 'pinned') {
 
                 $pinnedMedia = [];
-                $pinnedMediaIds = CommunityPinnedMedia::where('community_id', $community_id)->orderBy('id', 'desc')->limit(12)->pluck('media_id');
+                $pinnedMediaIds = CommunityPinnedMedia::where('community_id', $community_id)->orderBy('id', 'desc')->pluck('media_id');
                 foreach ($pinnedMediaIds as $id) {
                     $media = CommunityMedia::find($id);
                     $pinnedMedia[] = $media;
