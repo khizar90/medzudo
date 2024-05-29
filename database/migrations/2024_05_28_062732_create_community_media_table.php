@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('community_id')->constrained('communities')->onDelete('cascade');
             $table->unsignedBigInteger('folder_id')->default(0);
             $table->string('media');
+            $table->string('thumbnail')->default('');
             $table->string('tagline');
             $table->string('type');
             $table->timestamps();

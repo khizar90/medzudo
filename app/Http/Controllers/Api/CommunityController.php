@@ -21,6 +21,8 @@ use App\Models\Follow;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use FFMpeg\Coordinate\TimeCode;
+use FFMpeg\FFMpeg;
 use stdClass;
 
 class CommunityController extends Controller
@@ -498,20 +500,35 @@ class CommunityController extends Controller
 
     public function addMedia(CommunityAddMediaRequest $request)
     {
+
         $create = new CommunityMedia();
         $file = $request->file('media');
         $community = Community::find($request->community_id);
         $path = Storage::disk('local')->put('user/' . $community->user_id . '/community/media', $file);
+        $filename = basename($path);
         $create->media = '/uploads/' . $path;
         $create->tagline = $request->tagline;
         $create->community_id = $request->community_id;
         $create->type = $request->type;
+        if ($request->type == 'video') {
+            $thumbnailPath = $this->getVideoThumb($create->media);
+            $create->thumbnail = $thumbnailPath;
+        }
         $create->folder_id = $request->folder_id ?: 0;
         $create->save();
         return response()->json([
             'status' => true,
             'action' =>  'Community media Added',
         ]);
+    }
+    function getVideoThumb($path)
+    {
+        $ffmpeg = FFMpeg::create();
+        $video = $ffmpeg->open(public_path($path));
+        $thumbnailFileName = time() . '-' . uniqid() . '.jpg';
+        $thumbnailPath = '/uploads/thumbnails/' . $thumbnailFileName;
+        $video->frame(TimeCode::fromSeconds(1))->save(public_path($thumbnailPath));
+        return $thumbnailPath;
     }
 
     public function deleteMedia($media_id)
@@ -647,7 +664,7 @@ class CommunityController extends Controller
             'action' =>  'Community not found',
         ]);
     }
-    public function listFolder(Request $request,$type, $community_id)
+    public function listFolder(Request $request, $type, $community_id)
     {
         $community = Community::find($community_id);
 
@@ -672,7 +689,7 @@ class CommunityController extends Controller
                 $count  = count($pinnedMedia);
                 $pinnedMedia = collect($pinnedMedia);
                 $pinnedMedia = $pinnedMedia->forPage($request->page, 12)->values();
-    
+
                 return response()->json([
                     'status' => true,
                     'action' =>  'Community Pinned Media',
