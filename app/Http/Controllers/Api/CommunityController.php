@@ -249,9 +249,8 @@ class CommunityController extends Controller
     public function home(Request $request)
     {
         $user = User::find($request->user()->uuid);
-        $categories = Category::select('id', 'name', 'image')->where('type', 'interest')->get();
+        $categoriesall = Category::select('id', 'name', 'image')->where('type', 'interest')->get();
         $myCommunities = Community::where('user_id', $user->uuid)->latest()->limit(12)->get();
-
         foreach ($myCommunities as $my) {
             $categoriesIds  = explode(',', $my->categories);
             $categories = Category::whereIn('id', $categoriesIds)->get();
@@ -281,7 +280,7 @@ class CommunityController extends Controller
             'action' =>  'Home',
             'data' =>  array(
                 'request_count' => $request_count,
-                'categories' => $categories,
+                'categories' => $categoriesall,
                 'my_community' => $myCommunities,
                 'all_community' => $allCommunities,
             ),
@@ -311,7 +310,7 @@ class CommunityController extends Controller
     {
         $user = User::find($request->user()->uuid);
         if ($request->keyword != null || $request->keyword != '') {
-            $communities  = Community::where('user_id', '!=', $user->uuid)->where("name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
+            $communities  = Community::where("name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
 
             foreach ($communities as $all) {
                 $categoriesIds  = explode(',', $all->categories);

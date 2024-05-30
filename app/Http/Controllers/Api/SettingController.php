@@ -73,6 +73,7 @@ class SettingController extends Controller
     public function categories($type)
     {
         $interest = Category::select('id', 'name', 'image')->where('type', $type)->get();
+        return $interest;
         return response()->json([
             'status' => true,
             'action' => "Categories",
