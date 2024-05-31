@@ -74,6 +74,12 @@ class CommunityController extends Controller
 
         $new = Community::find($create->id);
 
+        $joinRequest = new CommunityJoinRequest();
+        $joinRequest->user_id = $user->uuid;
+        $joinRequest->community_id = $new->id;
+        $joinRequest->status = 'accept';
+        $joinRequest->save();
+
         return response()->json([
             'status' => true,
             'action' =>  'Community Added',
@@ -257,12 +263,14 @@ class CommunityController extends Controller
             $my->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $my->id)->get();
             $my->pictures = $pictures;
-            $my->participant_count = 0;
-            $my->participants = [];
+            $my->participant_count = CommunityJoinRequest::where('community_id', $my->id)->where('status', 'accept')->count();
+            $participantIds = CommunityJoinRequest::where('community_id', $my->id)->where('status', 'accept')->pluck('user_id');
+            $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+            $my->participants = $participants;
         }
 
 
-        $allCommunities = Community::where('type', 'Public')->where('user_id', '!=', $user->uuid)->latest()->paginate(12);
+        $allCommunities = Community::where('mode', 'Public')->where('user_id', '!=', $user->uuid)->latest()->paginate(12);
 
         foreach ($allCommunities as $all) {
             $categoriesIds  = explode(',', $all->categories);
@@ -270,8 +278,10 @@ class CommunityController extends Controller
             $all->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $all->id)->get();
             $all->pictures = $pictures;
-            $all->participant_count = 0;
-            $all->participants = [];
+            $all->participant_count = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->count();
+            $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->pluck('user_id');
+            $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+            $all->participants = $participants;
         }
 
         $request_count = CommunityJoinRequest::where('user_id', $user->uuid)->where('status', 'penidng')->count();
@@ -298,6 +308,10 @@ class CommunityController extends Controller
                 $item->categories = $categories;
                 $pictures = CommunityPicture::where('community_id', $item->id)->get();
                 $item->pictures = $pictures;
+                $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', 'accept')->count();
+                $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', 'accept')->pluck('user_id');
+                $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+                $item->participants = $participants;
             }
         }
         return response()->json([
@@ -318,8 +332,10 @@ class CommunityController extends Controller
                 $all->categories = $categories;
                 $pictures = CommunityPicture::where('community_id', $all->id)->get();
                 $all->pictures = $pictures;
-                $all->participant_count = 0;
-                $all->participants = [];
+                $all->participant_count = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->count();
+                $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->pluck('user_id');
+                $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+                $all->participants = $participants;
             }
             return response()->json([
                 'status' => true,
@@ -344,8 +360,10 @@ class CommunityController extends Controller
             $all->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $all->id)->get();
             $all->pictures = $pictures;
-            $all->participant_count = 0;
-            $all->participants = [];
+            $all->participant_count = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->count();
+            $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->pluck('user_id');
+            $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+            $all->participants = $participants;
         }
         return response()->json([
             'status' => true,
@@ -473,6 +491,10 @@ class CommunityController extends Controller
             $item->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $item->id)->get();
             $item->pictures = $pictures;
+            $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', 'accept')->count();
+            $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', 'accept')->pluck('user_id');
+            $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+            $item->participants = $participants;
         }
         return response()->json([
             'status' => true,

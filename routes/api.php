@@ -27,6 +27,11 @@ use Illuminate\Support\Facades\Route;
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('user/logout', [AuthController::class, 'logout']);
+    Route::post('user/delete', [AuthController::class, 'deleteAccount']);
+});
 Route::post('user/verify', [AuthController::class, 'verify']);
 Route::post('otp/verify', [AuthController::class, 'otpVerify']);
 Route::post('user/register', [AuthController::class, 'register']);
@@ -35,8 +40,7 @@ Route::post('user/add/interest', [AuthController::class, 'addInterest']);
 Route::get('user/get/interest/{user_id}', [AuthController::class, 'userInterest']);
 Route::post('user/recover', [AuthController::class, 'recover']);
 Route::post('user/new/password', [AuthController::class, 'newPassword']);
-Route::post('user/logout', [AuthController::class, 'logout']);
-Route::post('user/delete', [AuthController::class, 'deleteAccount']);
+
 Route::get('blocklist/{id}', [AuthController::class, 'blockList']);
 Route::post('change/password', [AuthController::class, 'changePassword']);
 Route::post('edit/image', [AuthController::class, 'editImage']);
