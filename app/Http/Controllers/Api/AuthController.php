@@ -287,8 +287,9 @@ class AuthController extends Controller
 
     public function logout(LogoutRequest $request)
     {
+        $user =User::find($request->user_id);
         UserDevice::where('user_id', $request->user_id)->where('device_id', $request->device_id)->delete();
-        $request->user()->currentAccessToken()->delete();
+        $user->tokens()->delete();
         return response()->json([
             'status' => true,
             'action' => 'User logged out'
