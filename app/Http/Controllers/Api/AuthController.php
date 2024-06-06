@@ -374,6 +374,12 @@ class AuthController extends Controller
                 $user->image = $path;
             }
             $user->save();
+            $interest = UserInterest::where('user_id', $user->uuid)->first();
+            if ($interest) {
+                $user->interest_add = true;
+            } else {
+                $user->interest_add = false;
+            }
             $token = $request->bearerToken();
             $user->token = $token;
 
@@ -397,6 +403,12 @@ class AuthController extends Controller
             $user->image = '';
 
             $user->save();
+            $interest = UserInterest::where('user_id', $user->uuid)->first();
+            if ($interest) {
+                $user->interest_add = true;
+            } else {
+                $user->interest_add = false;
+            }
             $token = $request->bearerToken();
             $user->token = $token;
             return response()->json([
