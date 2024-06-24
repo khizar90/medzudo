@@ -28,4 +28,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('media/home/{community_id}', [CommunityController::class, 'communitMediaHome']);
     Route::get('media/list/{type}/{community_id}', [CommunityController::class, 'listFolder']);
 
+    Route::prefix('course')->group(function () {
+        Route::post('create', [CommunityController::class, 'createCourse']);
+        Route::post('edit', [CommunityController::class, 'editCourse']);
+        Route::get('delete/{course_id}', [CommunityController::class, 'deleteCourse']);
+        Route::get('detail/{course_id}', [CommunityController::class, 'detailCourse']);
+        Route::get('publish/{course_id}', [CommunityController::class, 'publishCourse']);
+        Route::prefix('section')->group(function () {
+            Route::get('list/{course_id}', [CommunityController::class, 'courseSectionList']);
+            Route::post('create', [CommunityController::class, 'createCourseSection']);
+            Route::post('edit', [CommunityController::class, 'editCourseSection']);
+            Route::get('delete/{section_id}', [CommunityController::class, 'deleteCourseSection']);
+
+            Route::prefix('video')->group(function () {
+                Route::get('list/{section_id}', [CommunityController::class, 'listCourseSectionVideos']);
+                Route::post('create', [CommunityController::class, 'createCourseSectionVideo']);
+                Route::post('edit', [CommunityController::class, 'editCourseSectionVideo']);
+                Route::get('delete/{section_id}', [CommunityController::class, 'deleteCourseSectionVideo']);
+            });
+        });
+    });
 });

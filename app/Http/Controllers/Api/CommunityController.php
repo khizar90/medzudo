@@ -6,11 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Community\CommunityAddFolderRequest;
 use App\Http\Requests\Api\Community\CommunityAddMediaRequest;
 use App\Http\Requests\Api\Community\CommunityEditFolderRequest;
+use App\Http\Requests\Api\Community\CreateCommunityCourseRequest;
+use App\Http\Requests\Api\Community\CreateCommunityCourseSectionRequest;
+use App\Http\Requests\Api\Community\CreateCommunityCourseSectionVideoRequest;
 use App\Http\Requests\Api\Community\CreateCommunityRequest;
 use App\Models\BlockList;
 use App\Models\Category;
 use App\Models\Community;
 use App\Models\CommunityCategories;
+use App\Models\CommunityCourse;
+use App\Models\CommunityCourseSection;
+use App\Models\CommunityCourseSectionVideo;
 use App\Models\CommunityFolder;
 use App\Models\CommunityJoinRequest;
 use App\Models\CommunityMedia;
@@ -724,6 +730,279 @@ class CommunityController extends Controller
         return response()->json([
             'status' => false,
             'action' =>  'Community not found',
+        ]);
+    }
+
+    public function createCourse(CreateCommunityCourseRequest $request)
+    {
+        $user = User::find($request->user()->uuid);
+        $community = Community::find($request->community_id);
+        if ($community) {
+            $file = $request->file('image');
+
+            $path = Storage::disk('local')->put('user/' . $community->user_id . '/community/course', $file);
+
+            $create = new CommunityCourse();
+            $create->image = '/uploads/' . $path;
+            $create->user_id = $user->uuid;
+            $create->community_id = $request->community_id;
+            $create->title = $request->title;
+            $create->point = $request->point;
+            $create->description = $request->description;
+            $create->price = $request->price;
+            $create->save();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Community Course Added',
+                'data' => $create
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'action' =>  'Community not found',
+        ]);
+    }
+    public function editCourse(Request $request)
+    {
+        $create = CommunityCourse::find($request->course_id);
+        $community = Community::find($create->community_id);
+        if ($create) {
+            if ($request->has('image')) {
+                $file = $request->file('image');
+                $path = Storage::disk('local')->put('user/' . $community->user_id . '/community/course', $file);
+                $create->image = '/uploads/' . $path;
+            }
+            if ($request->has('title')) {
+                $create->title = $request->title;
+            }
+            if ($request->has('description')) {
+                $create->description = $request->description;
+            }
+            if ($request->has('price')) {
+                $create->price = $request->price;
+            }
+            if ($request->has('point')) {
+                $create->point = $request->point;
+            }
+            $create->save();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Community Course Edit',
+                'data' => $create
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'action' =>  'Course not found',
+        ]);
+    }
+
+    public function deleteCourse($course_id)
+    {
+        $course = CommunityCourse::find($course_id);
+        if ($course) {
+            $course->delete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Community Deleted!',
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Course not found',
+        ]);
+    }
+
+
+
+    public function detailCourse($course_id)
+    {
+        $course = CommunityCourse::find($course_id);
+        if ($course) {
+            $course->section_count = CommunityCourseSection::where('course_id', $course->id)->count();
+            $sections = CommunityCourseSection::where('course_id', $course->id)->pluck('id'); 
+            $duration  = CommunityCourseSectionVideo::whereIn('id',$sections)->sum('duration');
+            $course->duration_count = $duration;
+            $course->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $course->user_id)->first();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Course  Detail',
+                'data' => $course
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Course not found',
+        ]);
+    }
+
+    public function courseSectionList($course_id)
+    {
+        $course = CommunityCourse::find($course_id);
+        if ($course) {
+            $list = CommunityCourseSection::all();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Community Course Sections',
+                'data' => $list
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Course not found',
+        ]);
+    }
+
+    public function createCourseSection(CreateCommunityCourseSectionRequest $request)
+    {
+        $create = new CommunityCourseSection();
+        $create->course_id = $request->course_id;
+        $create->title = $request->title;
+        $create->save();
+        return response()->json([
+            'status' => true,
+            'action' =>  'Community Course Section Added',
+            'data' => $create
+        ]);
+    }
+
+    public function editCourseSection(Request $request)
+    {
+        $create = CommunityCourseSection::find($request->section_id);
+        if ($create) {
+            if ($request->has('title')) {
+                $create->title = $request->title;
+            }
+            $create->save();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Section Edit',
+                'data' => $create
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Section not found',
+        ]);
+    }
+    public function deleteCourseSection($section_id)
+    {
+        $section = CommunityCourseSection::find($section_id);
+        if ($section) {
+            $section->deelete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Section Deleted!',
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Section not found',
+        ]);
+    }
+
+    public function listCourseSectionVideos($section_id)
+    {
+        $section = CommunityCourseSection::find($section_id);
+        if ($section) {
+            $list = CommunityCourseSectionVideo::all();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Course Sections Videos',
+                'data' => $list
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Section not found',
+        ]);
+    }
+    public function createCourseSectionVideo(CreateCommunityCourseSectionVideoRequest $request)
+    {
+        $user = User::Find($request->user()->uuid);
+        $create = new CommunityCourseSectionVideo();
+        $file = $request->file('video');
+        $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/course/seaction', $file);
+        $create->video = '/uploads/' . $path;
+
+        $create->title = $request->title;
+        $create->duration = $request->duration;
+        $create->description = $request->description;
+        $create->section_id = $request->section_id;
+        $create->save();
+        return response()->json([
+            'status' => true,
+            'action' =>  'Section Video Added',
+            'data' => $create
+        ]);
+    }
+
+    public function editCourseSectionVideo(Request $request)
+    {
+        $user = User::Find($request->user()->uuid);
+
+        $create = CommunityCourseSectionVideo::find($request->video_id);
+        if ($create) {
+            if ($request->has('video')) {
+                $file = $request->file('video');
+                $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/course/seaction', $file);
+                $create->video = '/uploads/' . $path;
+            }
+            if ($request->has('title')) {
+                $create->title = $request->title;
+            }
+            if ($request->has('description')) {
+                $create->description = $request->description;
+            }
+            if ($request->has('duration')) {
+                $create->duration = $request->duration;
+            }
+            $create->save();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Section Video Edit',
+                'data' => $create
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Video not found',
+        ]);
+    }
+
+    public function deleteCourseSectionVideo($video_id)
+    {
+        $video = CommunityCourseSectionVideo::find($video_id);
+        if ($video) {
+            $video->deelete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Section Video Deleted!',
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Section Vidoe not found',
+        ]);
+    }
+
+
+    public function publishCourse($course_id)
+    {
+        $course = CommunityCourse::find($course_id);
+        if ($course) {
+            $course->is_publish  = 1;
+            $course->save();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Course Publish!',
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Course not Found',
         ]);
     }
 }
