@@ -891,7 +891,7 @@ class CommunityController extends Controller
     {
         $section = CommunityCourseSection::find($section_id);
         if ($section) {
-            $section->deelete();
+            $section->delete();
             return response()->json([
                 'status' => true,
                 'action' =>  'Section Deleted!',
@@ -976,7 +976,7 @@ class CommunityController extends Controller
     {
         $video = CommunityCourseSectionVideo::find($video_id);
         if ($video) {
-            $video->deelete();
+            $video->delete();
             return response()->json([
                 'status' => true,
                 'action' =>  'Section Video Deleted!',
