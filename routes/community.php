@@ -47,5 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::get('delete/{section_id}', [CommunityController::class, 'deleteCourseSectionVideo']);
             });
         });
+
+        Route::get('generate-certificate', [CommunityController::class, 'generateCertificate']);
+
     });
 });

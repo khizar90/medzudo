@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\Storage;
 use FFMpeg\Coordinate\TimeCode;
 use FFMpeg\FFMpeg;
 use stdClass;
+use PDF;
 
 class CommunityController extends Controller
 {
@@ -1004,5 +1005,18 @@ class CommunityController extends Controller
             'status' => false,
             'action' =>  'Course not Found',
         ]);
+    }
+
+    public function generateCertificate()
+    {
+        $data = [
+            'name' => 'John Doe',
+            'course' => 'Laravel Development',
+            'date' => date('m/d/Y')
+        ];
+    
+        $pdf = PDF::loadView('certificate', $data);
+    
+        return $pdf->stream('certificate.pdf');
     }
 }
