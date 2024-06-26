@@ -17,11 +17,14 @@ use App\Models\CommunityCategories;
 use App\Models\CommunityCourse;
 use App\Models\CommunityCourseSection;
 use App\Models\CommunityCourseSectionVideo;
+use App\Models\CommunityCourseSectionVideoSeen;
 use App\Models\CommunityFolder;
 use App\Models\CommunityJoinRequest;
 use App\Models\CommunityMedia;
 use App\Models\CommunityPicture;
 use App\Models\CommunityPinnedMedia;
+use App\Models\CommunitySectionSeen;
+use App\Models\CommunitySectionVideoSeen;
 use App\Models\CommunitySponsor;
 use App\Models\Follow;
 use App\Models\User;
@@ -818,15 +821,25 @@ class CommunityController extends Controller
 
 
 
-    public function detailCourse($course_id)
+    public function detailCourse(Request $request, $course_id)
     {
+        $user = User::find($request->user()->uuid);
         $course = CommunityCourse::find($course_id);
         if ($course) {
             $course->section_count = CommunityCourseSection::where('course_id', $course->id)->count();
-            $sections = CommunityCourseSection::where('course_id', $course->id)->pluck('id'); 
-            $duration  = CommunityCourseSectionVideo::whereIn('id',$sections)->sum('duration');
+            $duration  = CommunityCourseSectionVideo::where('course_id', $course->id)->sum('duration');
             $course->duration_count = $duration;
+            $videos_count = CommunityCourseSectionVideo::count();
+            $seen_count = CommunityCourseSectionVideoSeen::where('user_id', $user->uuid)->where('course_id', $course->id)->count();
+            if ($videos_count > 0) {
+                $average_seen = $seen_count / $videos_count;
+                $average_seen = $average_seen *100;
+            } else {
+                $average_seen = 0; // or handle the case when there are no videos
+            }
+            $course->progress = $average_seen;
             $course->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $course->user_id)->first();
+
             return response()->json([
                 'status' => true,
                 'action' =>  'Course  Detail',
@@ -904,11 +917,20 @@ class CommunityController extends Controller
         ]);
     }
 
-    public function listCourseSectionVideos($section_id)
+    public function listCourseSectionVideos(Request $request, $section_id)
     {
+        $user = User::find($request->user()->uuid);
         $section = CommunityCourseSection::find($section_id);
         if ($section) {
             $list = CommunityCourseSectionVideo::all();
+            foreach ($list as $item) {
+                $find = CommunityCourseSectionVideoSeen::where('user_id', $user->uuid)->where('video_id', $item->id)->first();
+                if ($find) {
+                    $item->is_seen = true;
+                } else {
+                    $item->is_seen = false;
+                }
+            }
             return response()->json([
                 'status' => true,
                 'action' =>  'Course Sections Videos',
@@ -923,12 +945,14 @@ class CommunityController extends Controller
     public function createCourseSectionVideo(CreateCommunityCourseSectionVideoRequest $request)
     {
         $user = User::Find($request->user()->uuid);
+        $section = CommunityCourseSection::find($request->section_id);
         $create = new CommunityCourseSectionVideo();
         $file = $request->file('video');
         $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/course/seaction', $file);
         $create->video = '/uploads/' . $path;
 
         $create->title = $request->title;
+        $create->course_id = $section->course_id;
         $create->duration = $request->duration;
         $create->description = $request->description;
         $create->section_id = $request->section_id;
@@ -1014,9 +1038,35 @@ class CommunityController extends Controller
             'course' => 'Laravel Development',
             'date' => date('m/d/Y')
         ];
-    
+
         $pdf = PDF::loadView('certificate', $data);
-    
+
         return $pdf->stream('certificate.pdf');
+    }
+
+    public function seenSection(Request $request, $video_id)
+    {
+        $user = User::find($request->user()->uuid);
+        $find = CommunitySectionVideoSeen::where('user_id', $user->uuid)->where('video_id', $video_id)->first();
+        if ($find) {
+            $find->delete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Section Video Un Seen',
+            ]);
+        }
+        $video = CommunityCourseSectionVideo::find($video_id);
+        $section = CommunityCourseSection::find($video->section_id);
+
+        $create =  new CommunitySectionVideoSeen();
+        $create->course_id = $section->course_id;
+        $create->section_id = $section->id;
+        $create->video_id = $video->id;
+        $create->user_id = $user->uuid;
+        $create->save();
+        return response()->json([
+            'status' => true,
+            'action' =>  'Section seen',
+        ]);
     }
 }

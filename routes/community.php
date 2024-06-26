@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::post('create', [CommunityController::class, 'createCourseSectionVideo']);
                 Route::post('edit', [CommunityController::class, 'editCourseSectionVideo']);
                 Route::get('delete/{section_id}', [CommunityController::class, 'deleteCourseSectionVideo']);
+                Route::get('seen/{video_id}', [CommunityController::class, 'seenSection']);
             });
         });
 
