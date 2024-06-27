@@ -1041,24 +1041,30 @@ class CommunityController extends Controller
 
         $pdf = PDF::loadView('certificate', $data);
 
-        return $pdf->stream('certificate.pdf');
+        return $pdf->stream('
+        
+        
+        
+        
+        
+        
+        .pdf');
     }
 
     public function seenSection(Request $request, $video_id)
     {
         $user = User::find($request->user()->uuid);
-        $find = CommunitySectionVideoSeen::where('user_id', $user->uuid)->where('video_id', $video_id)->first();
+        $find = CommunityCourseSectionVideoSeen::where('user_id', $user->uuid)->where('video_id', $video_id)->first();
         if ($find) {
-            $find->delete();
             return response()->json([
                 'status' => true,
-                'action' =>  'Section Video Un Seen',
+                'action' =>  'Section Video seen',
             ]);
         }
         $video = CommunityCourseSectionVideo::find($video_id);
         $section = CommunityCourseSection::find($video->section_id);
 
-        $create =  new CommunitySectionVideoSeen();
+        $create =  new CommunityCourseSectionVideoSeen();
         $create->course_id = $section->course_id;
         $create->section_id = $section->id;
         $create->video_id = $video->id;
@@ -1066,7 +1072,7 @@ class CommunityController extends Controller
         $create->save();
         return response()->json([
             'status' => true,
-            'action' =>  'Section seen',
+            'action' =>  'Section Video seen',
         ]);
     }
 }
