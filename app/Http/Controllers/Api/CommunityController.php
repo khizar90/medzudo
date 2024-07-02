@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Community\CommunityAddFolderRequest;
 use App\Http\Requests\Api\Community\CommunityAddMediaRequest;
 use App\Http\Requests\Api\Community\CommunityEditFolderRequest;
+use App\Http\Requests\Api\Community\CommunityPurchaseCourseRequest;
 use App\Http\Requests\Api\Community\CreateCommunityCourseRequest;
 use App\Http\Requests\Api\Community\CreateCommunityCourseSectionRequest;
 use App\Http\Requests\Api\Community\CreateCommunityCourseSectionVideoRequest;
@@ -15,6 +16,8 @@ use App\Models\Category;
 use App\Models\Community;
 use App\Models\CommunityCategories;
 use App\Models\CommunityCourse;
+use App\Models\CommunityCourseCertificate;
+use App\Models\CommunityCoursePurchase;
 use App\Models\CommunityCourseSection;
 use App\Models\CommunityCourseSectionVideo;
 use App\Models\CommunityCourseSectionVideoSeen;
@@ -330,6 +333,7 @@ class CommunityController extends Controller
             'data' => $communities
         ]);
     }
+
     public function search(Request $request)
     {
         $user = User::find($request->user()->uuid);
@@ -381,6 +385,24 @@ class CommunityController extends Controller
             'data' => $communities
         ]);
     }
+
+    public function detail(Request $request, $community_id, $type)
+    {
+        if ($type == 'courses') {
+            $courses = CommunityCourse::where('community_id', $community_id)->paginate(12);
+            foreach ($courses as $course) {
+                $course->section_count = CommunityCourseSection::where('course_id', $course->id)->count();
+                $duration  = CommunityCourseSectionVideo::where('course_id', $course->id)->sum('duration');
+                $course->duration_count = $duration;
+            }
+            return response()->json([
+                'status' => true,
+                'action' =>  'Course  list',
+                'data' => $courses
+            ]);
+        }
+    }
+
 
     public function listUser(Request $request, $community_id)
     {
@@ -829,11 +851,11 @@ class CommunityController extends Controller
             $course->section_count = CommunityCourseSection::where('course_id', $course->id)->count();
             $duration  = CommunityCourseSectionVideo::where('course_id', $course->id)->sum('duration');
             $course->duration_count = $duration;
-            $videos_count = CommunityCourseSectionVideo::count();
+            $videos_count = CommunityCourseSectionVideo::where('course_id', $course->id)->count();
             $seen_count = CommunityCourseSectionVideoSeen::where('user_id', $user->uuid)->where('course_id', $course->id)->count();
             if ($videos_count > 0) {
                 $average_seen = $seen_count / $videos_count;
-                $average_seen = $average_seen *100;
+                $average_seen = $average_seen * 100;
             } else {
                 $average_seen = 0; // or handle the case when there are no videos
             }
@@ -856,7 +878,7 @@ class CommunityController extends Controller
     {
         $course = CommunityCourse::find($course_id);
         if ($course) {
-            $list = CommunityCourseSection::all();
+            $list = CommunityCourseSection::where('course_id',$course_id)->get();
             return response()->json([
                 'status' => true,
                 'action' =>  'Community Course Sections',
@@ -922,7 +944,7 @@ class CommunityController extends Controller
         $user = User::find($request->user()->uuid);
         $section = CommunityCourseSection::find($section_id);
         if ($section) {
-            $list = CommunityCourseSectionVideo::all();
+            $list = CommunityCourseSectionVideo::where('section_id',$section_id)->get();
             foreach ($list as $item) {
                 $find = CommunityCourseSectionVideoSeen::where('user_id', $user->uuid)->where('video_id', $item->id)->first();
                 if ($find) {
@@ -950,7 +972,8 @@ class CommunityController extends Controller
         $file = $request->file('video');
         $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/course/seaction', $file);
         $create->video = '/uploads/' . $path;
-
+        $thumbnailPath = $this->getVideoThumb($create->video);
+        $create->thumbnail = $thumbnailPath;
         $create->title = $request->title;
         $create->course_id = $section->course_id;
         $create->duration = $request->duration;
@@ -974,6 +997,8 @@ class CommunityController extends Controller
                 $file = $request->file('video');
                 $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/course/seaction', $file);
                 $create->video = '/uploads/' . $path;
+                $thumbnailPath = $this->getVideoThumb($create->video);
+                $create->thumbnail = $thumbnailPath;
             }
             if ($request->has('title')) {
                 $create->title = $request->title;
@@ -1041,14 +1066,7 @@ class CommunityController extends Controller
 
         $pdf = PDF::loadView('certificate', $data);
 
-        return $pdf->stream('
-        
-        
-        
-        
-        
-        
-        .pdf');
+        return $pdf->stream('.pdf');
     }
 
     public function seenSection(Request $request, $video_id)
@@ -1070,9 +1088,87 @@ class CommunityController extends Controller
         $create->video_id = $video->id;
         $create->user_id = $user->uuid;
         $create->save();
+
+        $videos_count = CommunityCourseSectionVideo::where('course_id', $video->course_id)->count();
+        $seen_count = CommunityCourseSectionVideoSeen::where('user_id', $user->uuid)->where('course_id', $video->course_id)->count();
+        if ($videos_count > 0) {
+            $average_seen = $seen_count / $videos_count;
+            $average_seen = $average_seen * 100;
+            if ($average_seen == 100) {
+                $check = CommunityCourseCertificate::where('user_id', $user->uuid)->where('course_id', $video->course_id)->first();
+                if (!$check) {
+                    $create = new CommunityCourseCertificate();
+                    $create->user_id = $user->uuid;
+                    $create->course_id = $video->course_id;
+                    $create->time = time();
+                    $create->save();
+                }
+            }
+        }
         return response()->json([
             'status' => true,
             'action' =>  'Section Video seen',
+        ]);
+    }
+
+    public function viewCourseCeritificate(Request $request, $course_id)
+    {
+        $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $request->user()->uuid)->first();
+        $find = CommunityCourseCertificate::where('user_id', $user->uuid)->where('course_id', $course_id)->first();
+        $course = CommunityCourse::find($course_id);
+        if ($course) {
+            $course_by = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $course->user_id)->first();
+            $course->author = $course_by;
+        }
+        if ($find) {
+            $find->course = $course;
+            $find->user = $user;
+            return response()->json([
+                'status' => true,
+                'action' =>  'Ceritficate',
+                'data' =>  $find
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  'Ceritficate not Found',
+        ]);
+    }
+
+    public function storeCourseCeritificate(Request $request, $crtf_id)
+    {
+        $user = User::find($request->user()->uuid);
+        $find = CommunityCourseCertificate::find($crtf_id);
+        if ($find) {
+            if ($request->has('media')) {
+                $file = $request->file('media');
+                $path = Storage::disk('local')->put('user/' . $user->user_id . '/course/certificate', $file);
+                $find->media  = '/uploads/' . $path;
+                $find->save();
+                return response()->json([
+                    'status' => true,
+                    'action' =>  'Ceritficate',
+                    'data' =>  $find
+                ]);
+            }
+            return response()->json([
+                'status' => false,
+                'action' =>  'Ceritficate not Found',
+            ]);
+        }
+    }
+
+    public function purchaseCourse(CommunityPurchaseCourseRequest $request){
+        $user = User::find($request->user()->uuid);
+        $create = new CommunityCoursePurchase();
+        $create->user_id = $user->uuid;
+        $create->course_id = $request->course_id;
+        $create->price = $request->price;
+        $create->save();
+        return response()->json([
+            'status' => true,
+            'action' =>  'Course Purchase',
+            'data' => $create
         ]);
     }
 }

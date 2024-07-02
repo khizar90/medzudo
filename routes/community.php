@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('folder/media/{folder_id}', [CommunityController::class, 'folderMedia']);
     Route::get('media/home/{community_id}', [CommunityController::class, 'communitMediaHome']);
     Route::get('media/list/{type}/{community_id}', [CommunityController::class, 'listFolder']);
+    Route::get('detail/{communty_id}/{type}', [CommunityController::class, 'detail']);
 
     Route::prefix('course')->group(function () {
         Route::post('create', [CommunityController::class, 'createCourse']);
@@ -34,6 +35,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('delete/{course_id}', [CommunityController::class, 'deleteCourse']);
         Route::get('detail/{course_id}', [CommunityController::class, 'detailCourse']);
         Route::get('publish/{course_id}', [CommunityController::class, 'publishCourse']);
+
+        Route::get('view/certificate/{course_id}', [CommunityController::class, 'viewCourseCeritificate']);
+        Route::post('store/certificate/{crtf_id}', [CommunityController::class, 'storeCourseCeritificate']);
+
+        Route::post('purchase', [CommunityController::class, 'purchaseCourse']);
+
         Route::prefix('section')->group(function () {
             Route::get('list/{course_id}', [CommunityController::class, 'courseSectionList']);
             Route::post('create', [CommunityController::class, 'createCourseSection']);
