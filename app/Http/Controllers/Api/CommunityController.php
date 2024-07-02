@@ -388,12 +388,21 @@ class CommunityController extends Controller
 
     public function detail(Request $request, $community_id, $type)
     {
+        $user = User::find($request->user()->uuid);
         if ($type == 'courses') {
             $courses = CommunityCourse::where('community_id', $community_id)->paginate(12);
             foreach ($courses as $course) {
                 $course->section_count = CommunityCourseSection::where('course_id', $course->id)->count();
                 $duration  = CommunityCourseSectionVideo::where('course_id', $course->id)->sum('duration');
                 $course->duration_count = $duration;
+                $is_purchase = CommunityCoursePurchase::where('user_id',$user->uuid)->where('course_id',$course->id)->first();
+                if($is_purchase){
+                    $course->is_purchase = true;
+                }
+                else{
+                    $course->is_purchase = false;
+    
+                }
             }
             return response()->json([
                 'status' => true,
@@ -862,6 +871,14 @@ class CommunityController extends Controller
             $course->progress = $average_seen;
             $course->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $course->user_id)->first();
 
+            $is_purchase = CommunityCoursePurchase::where('user_id',$user->uuid)->where('course_id',$course->id)->first();
+            if($is_purchase){
+                $course->is_purchase = true;
+            }
+            else{
+                $course->is_purchase = false;
+
+            }
             return response()->json([
                 'status' => true,
                 'action' =>  'Course  Detail',
@@ -1142,7 +1159,7 @@ class CommunityController extends Controller
         if ($find) {
             if ($request->has('media')) {
                 $file = $request->file('media');
-                $path = Storage::disk('local')->put('user/' . $user->user_id . '/course/certificate', $file);
+                $path = Storage::disk('local')->put('user/' . $user->uuid . '/course/certificate', $file);
                 $find->media  = '/uploads/' . $path;
                 $find->save();
                 return response()->json([
