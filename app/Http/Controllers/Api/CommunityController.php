@@ -395,13 +395,11 @@ class CommunityController extends Controller
                 $course->section_count = CommunityCourseSection::where('course_id', $course->id)->count();
                 $duration  = CommunityCourseSectionVideo::where('course_id', $course->id)->sum('duration');
                 $course->duration_count = $duration;
-                $is_purchase = CommunityCoursePurchase::where('user_id',$user->uuid)->where('course_id',$course->id)->first();
-                if($is_purchase){
+                $is_purchase = CommunityCoursePurchase::where('user_id', $user->uuid)->where('course_id', $course->id)->first();
+                if ($is_purchase) {
                     $course->is_purchase = true;
-                }
-                else{
+                } else {
                     $course->is_purchase = false;
-    
                 }
             }
             return response()->json([
@@ -777,8 +775,15 @@ class CommunityController extends Controller
 
             $path = Storage::disk('local')->put('user/' . $community->user_id . '/community/course', $file);
 
+            $imagePath = public_path('/uploads/'.$path);
+            list($width, $height) = getimagesize($imagePath);
+
+            $size = $width / $height;
+            $size = number_format($size, 2);
+
             $create = new CommunityCourse();
             $create->image = '/uploads/' . $path;
+            $create->size = $size;
             $create->user_id = $user->uuid;
             $create->community_id = $request->community_id;
             $create->title = $request->title;
@@ -871,13 +876,11 @@ class CommunityController extends Controller
             $course->progress = $average_seen;
             $course->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $course->user_id)->first();
 
-            $is_purchase = CommunityCoursePurchase::where('user_id',$user->uuid)->where('course_id',$course->id)->first();
-            if($is_purchase){
+            $is_purchase = CommunityCoursePurchase::where('user_id', $user->uuid)->where('course_id', $course->id)->first();
+            if ($is_purchase) {
                 $course->is_purchase = true;
-            }
-            else{
+            } else {
                 $course->is_purchase = false;
-
             }
             return response()->json([
                 'status' => true,
@@ -895,7 +898,7 @@ class CommunityController extends Controller
     {
         $course = CommunityCourse::find($course_id);
         if ($course) {
-            $list = CommunityCourseSection::where('course_id',$course_id)->get();
+            $list = CommunityCourseSection::where('course_id', $course_id)->get();
             return response()->json([
                 'status' => true,
                 'action' =>  'Community Course Sections',
@@ -961,7 +964,7 @@ class CommunityController extends Controller
         $user = User::find($request->user()->uuid);
         $section = CommunityCourseSection::find($section_id);
         if ($section) {
-            $list = CommunityCourseSectionVideo::where('section_id',$section_id)->get();
+            $list = CommunityCourseSectionVideo::where('section_id', $section_id)->get();
             foreach ($list as $item) {
                 $find = CommunityCourseSectionVideoSeen::where('user_id', $user->uuid)->where('video_id', $item->id)->first();
                 if ($find) {
@@ -1175,7 +1178,8 @@ class CommunityController extends Controller
         }
     }
 
-    public function purchaseCourse(CommunityPurchaseCourseRequest $request){
+    public function purchaseCourse(CommunityPurchaseCourseRequest $request)
+    {
         $user = User::find($request->user()->uuid);
         $create = new CommunityCoursePurchase();
         $create->user_id = $user->uuid;

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignUuid('user_id')->references('uuid')->on('users')->onDelete('cascade');
             $table->foreignId('community_id')->constrained('communities')->onDelete('cascade');
             $table->string('image');
+            $table->string('size')->default('1.8');
             $table->string('title');
             $table->string('price');
             $table->string('point');
