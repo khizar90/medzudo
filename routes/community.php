@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\CommunityController;
+use App\Http\Controllers\Api\CommunityPostController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -57,6 +58,16 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         Route::get('generate-certificate', [CommunityController::class, 'generateCertificate']);
+    });
+    Route::prefix('post')->group(function () {
+        Route::post('create', [CommunityPostController::class, 'create']);
+        Route::get('like/{post_id}', [CommunityPostController::class, 'like']);
+        Route::get('save/{post_id}', [CommunityPostController::class, 'save']);
+        Route::get('delete/{post_id}', [CommunityPostController::class, 'delete']);
+        Route::post('comment', [CommunityPostController::class, 'comment']);
+        Route::get('comment/delete/{comment_id}', [CommunityPostController::class, 'deleteComment']);
+        Route::get('comment/like/{comment_id}', [CommunityPostController::class, 'likeComment']);
+        Route::post('vote', [CommunityPostController::class, 'vote']);
 
     });
 });

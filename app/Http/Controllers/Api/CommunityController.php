@@ -26,6 +26,11 @@ use App\Models\CommunityJoinRequest;
 use App\Models\CommunityMedia;
 use App\Models\CommunityPicture;
 use App\Models\CommunityPinnedMedia;
+use App\Models\CommunityPost;
+use App\Models\CommunityPostComment;
+use App\Models\CommunityPostLike;
+use App\Models\CommunityPostSave;
+use App\Models\CommunityPostVote;
 use App\Models\CommunitySectionSeen;
 use App\Models\CommunitySectionVideoSeen;
 use App\Models\CommunitySponsor;
@@ -323,7 +328,7 @@ class CommunityController extends Controller
                 $item->pictures = $pictures;
                 $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', 'accept')->count();
                 $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', 'accept')->pluck('user_id');
-                $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+                $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
                 $item->participants = $participants;
             }
         }
@@ -406,6 +411,91 @@ class CommunityController extends Controller
                 'status' => true,
                 'action' =>  'Course  list',
                 'data' => $courses
+            ]);
+        }
+        if ($type == 'about') {
+            $community = Community::find($community_id);
+            $categoriesIds  = explode(',', $community->categories);
+            $categories = Category::whereIn('id', $categoriesIds)->get();
+            $community->categories = $categories;
+            $pictures = CommunityPicture::where('community_id', $community->id)->get();
+            $community->pictures = $pictures;
+            $community->participant_count = CommunityJoinRequest::where('community_id', $community->id)->where('status', 'accept')->count();
+            $participantIds = CommunityJoinRequest::where('community_id', $community->id)->where('status', 'accept')->pluck('user_id');
+            $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+            $community->participants = $participants;
+            $community->sponser = CommunitySponsor::where('community_id', $community->id)->get();
+            $community->user =  User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $community->user_id)->first();
+            return response()->json([
+                'status' => true,
+                'action' =>  'About',
+                'data' => $community
+            ]);
+        }
+
+        if ($type == 'feed') {
+            $posts = CommunityPost::where('community_id', $community_id)->latest()->paginate(12);
+            foreach ($posts as $post) {
+                $postby = User::where('uuid', $post->user_id)->select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->first();
+                $comment_count = CommunityPostComment::where('post_id', $post->id)->count();
+                $like_count = CommunityPostLike::where('post_id', $post->id)->count();
+                $likestatus = CommunityPostLike::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
+                $saved = CommunityPostSave::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
+                $post->media = empty($post->media) ? [] : explode(',', $post->media);
+                $likes = CommunityPostLike::where('post_id', $post->id)->latest()->limit(3)->pluck('user_id');
+                $like_users = User::select('uuid', 'first_name', 'last_name')->whereIn('uuid', $likes)->where('uuid', '!=', $user->uuid)->get();
+                if ($likestatus) {
+                    $post->is_liked = true;
+                } else {
+                    $post->is_liked = false;
+                }
+
+                if ($saved) {
+                    $post->is_saved = true;
+                } else {
+                    $post->is_saved = false;
+                }
+                $votecount = 0;
+                $my_voted_option = '';
+                $option_1_count = 0;
+                $option_2_count = 0;
+                $option_3_count = 0;
+                $option_4_count = 0;
+                if ($post->type == 'poll') {
+                    $total_vote_count = CommunityPostVote::where('post_id', $post->id)->count();
+                    $checkVote = CommunityPostVote::where('user_id', $user->uuid)->where('post_id', $post->id)->first();
+                    if ($checkVote) {
+                        $my_voted_option = $checkVote->option;
+                    }
+                    $option_1_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_1')->count();
+                    $option_1_count = $option_1_count / $total_vote_count * 100;
+                    $option_2_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_2')->count();
+                    $option_2_count = $option_2_count / $total_vote_count * 100;
+                    $option_3_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_3')->count();
+                    $option_3_count = $option_3_count / $total_vote_count * 100;
+                    $option_4_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_4')->count();
+                    $option_4_count = $option_4_count / $total_vote_count * 100;
+
+                }
+                $post->my_voted_option = $my_voted_option;
+
+                $post->total_vote_count = $total_vote_count;
+                $post->option_1_count = $option_1_count;
+                $post->option_2_count = $option_2_count;
+                $post->option_3_count = $option_3_count;
+                $post->option_4_count = $option_4_count;
+
+
+                $post->comment_count = $comment_count;
+                $post->like_count = $like_count;
+                $post->like_users = $like_users;
+                $post->user = $postby;
+            }
+
+            return response()->json([
+                'status' => true,
+                'action' =>  'Feed',
+                'data' => $posts
             ]);
         }
     }
@@ -775,7 +865,7 @@ class CommunityController extends Controller
 
             $path = Storage::disk('local')->put('user/' . $community->user_id . '/community/course', $file);
 
-            $imagePath = public_path('/uploads/'.$path);
+            $imagePath = public_path('/uploads/' . $path);
             list($width, $height) = getimagesize($imagePath);
 
             $size = $width / $height;
