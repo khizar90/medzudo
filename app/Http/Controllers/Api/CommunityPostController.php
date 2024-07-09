@@ -7,6 +7,7 @@ use App\Http\Requests\Api\Community\Post\CommunityCreatePostRequest;
 use App\Http\Requests\Api\Community\Post\CommunityPostCommentRequest;
 use App\Http\Requests\Api\Community\Post\CommunityPostVoteRequest;
 use App\Models\Community;
+use App\Models\CommunityMedia;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostComment;
 use App\Models\CommunityPostCommentLike;
@@ -82,6 +83,22 @@ class CommunityPostController extends Controller
         $create->option_4 = $request->option_4 ?: '';
         $create->time = time();
         $create->save();
+
+
+        if ($request->add_into_media == 1) {
+            if ($request->has('media')) {
+                $media = explode(',', $create->media);
+                foreach ($media as $file) {
+                    $createMedia = new CommunityMedia();
+                    $createMedia->media = $file;
+                    $createMedia->thumbnail = $create->thumbnail;
+                    $createMedia->tagline = '';
+                    $createMedia->community_id = $create->community_id;
+                    $createMedia->type = $create->type;
+                    $createMedia->save();
+                }
+            }
+        }
         $new = CommunityPost::find($create->id);
         return response()->json([
             'status' => true,
@@ -428,8 +445,7 @@ class CommunityPostController extends Controller
                 'action' =>  'Feed',
                 'data' => $post
             ]);
-        }
-        else{
+        } else {
             return response()->json([
                 'status' => false,
                 'action' =>  'Post not Found',
