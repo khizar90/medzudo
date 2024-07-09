@@ -198,7 +198,7 @@ class CommunityPostController extends Controller
         ]);
     }
 
-    public function DeleteComment($comment_id)
+    public function deleteComment($comment_id)
     {
         $post = CommunityPostComment::find($comment_id);
         if ($post) {
@@ -251,10 +251,11 @@ class CommunityPostController extends Controller
         }
     }
 
-    public function vote(CommunityPostVoteRequest $request){
+    public function vote(CommunityPostVoteRequest $request)
+    {
         $user = User::find($request->user()->uuid);
-        $find = CommunityPostVote::where('user_id',$user->uuid)->where('post_id',$request->post_id)->where('option',$request->option)->first();
-        if($find){
+        $find = CommunityPostVote::where('user_id', $user->uuid)->where('post_id', $request->post_id)->where('option', $request->option)->first();
+        if ($find) {
             $find->delete();
             return response()->json([
                 'status' => true,
@@ -270,5 +271,169 @@ class CommunityPostController extends Controller
             'status' => true,
             'action' => 'Vote Added',
         ]);
+    }
+    public function commentList(Request $request, $post_id)
+    {
+        $user = User::find($request->user()->uuid);
+
+        $post = CommunityPost::find($post_id);
+        if ($post) {
+
+            $comments = CommunityPostComment::where('post_id', $post->id)->where('parent_id', 0)->paginate(12);
+
+            foreach ($comments as $comment) {
+                $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $comment->user_id)->first();
+                $likes = CommunityPostCommentLike::where('comment_id', $comment->id)->count();
+                $replies = CommunityPostComment::where('parent_id', $comment->id)->count();
+                $comment->likes = $likes;
+                $comment->replies = $replies;
+                $comment->user = $user;
+
+                $likestatus = CommunityPostCommentLike::where('comment_id', $comment->id)->where('user_id', $user->uuid)->first();
+
+                if ($likestatus) {
+                    $comment->is_liked = true;
+                } else {
+                    $comment->is_liked = false;
+                }
+            }
+            $total = CommunityPostComment::where('post_id', $post_id)->count();
+            return response()->json([
+                'status' => true,
+                'action' =>  "Comments",
+                'total' => $total,
+                'data' => $comments
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  "No post found",
+        ]);
+    }
+    public function commentReplies(Request $request, $comment_id)
+    {
+        $user = User::find($request->user()->uuid);
+
+        $comments = CommunityPostComment::where('parent_id', $comment_id)->get();
+        foreach ($comments as $comment) {
+            $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $comment->user_id)->first();
+            $likes = CommunityPostCommentLike::where('comment_id', $comment->id)->count();
+            // $replies = Comment::where('parent_id', $comment->id)->count();
+            $comment->likes = $likes;
+            $comment->replies = 0;
+            $comment->user = $user;
+            $likestatus = CommunityPostCommentLike::where('comment_id', $comment->id)->where('user_id', $user->uuid)->first();
+
+            if ($likestatus) {
+                $comment->is_liked = true;
+            } else {
+                $comment->is_liked = false;
+            }
+        }
+
+        $comment = CommunityPostComment::find($comment_id);
+
+        $total = CommunityPostComment::where('post_id', $comment->post_id)->count();
+
+        return response()->json([
+            'status' => true,
+            'action' =>  "Comments",
+            'total' => $total,
+            'data' => $comments
+        ]);
+    }
+
+    public function likeList(Request $request, $post_id)
+    {
+        $user = User::find($request->user()->uuid);
+        $post = CommunityPost::find($post_id);
+        if ($post) {
+            $likes = CommunityPostLike::where('post_id', $post_id)->pluck('user_id');
+            $users =  User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $likes)->Paginate(10);
+            return response()->json([
+                'status' => true,
+                'action' =>  "Users",
+                'data' => $users
+            ]);
+        }
+        return response()->json([
+            'status' => false,
+            'action' =>  "No post found",
+        ]);
+    }
+
+    public function detail(Request $request, $post_id)
+    {
+        $user = User::find($request->user()->uuid);
+        $post = CommunityPost::find($post_id);
+
+        if ($post) {
+            $postby = User::where('uuid', $post->user_id)->select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->first();
+            $comment_count = CommunityPostComment::where('post_id', $post->id)->count();
+            $like_count = CommunityPostLike::where('post_id', $post->id)->count();
+            $likestatus = CommunityPostLike::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
+            $saved = CommunityPostSave::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
+            $post->media = empty($post->media) ? [] : explode(',', $post->media);
+            $likes = CommunityPostLike::where('post_id', $post->id)->latest()->limit(3)->pluck('user_id');
+            $like_users = User::select('uuid', 'first_name', 'last_name')->whereIn('uuid', $likes)->where('uuid', '!=', $user->uuid)->get();
+            if ($likestatus) {
+                $post->is_liked = true;
+            } else {
+                $post->is_liked = false;
+            }
+
+            if ($saved) {
+                $post->is_saved = true;
+            } else {
+                $post->is_saved = false;
+            }
+            $total_vote_count = 0;
+            $my_voted_option = '';
+            $option_1_count = 0;
+            $option_2_count = 0;
+            $option_3_count = 0;
+            $option_4_count = 0;
+            if ($post->type == 'poll') {
+                $total_vote_count = CommunityPostVote::where('post_id', $post->id)->count();
+                $checkVote = CommunityPostVote::where('user_id', $user->uuid)->where('post_id', $post->id)->first();
+                if ($checkVote) {
+                    $my_voted_option = $checkVote->option;
+                }
+                $option_1_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_1')->count();
+                $option_1_count = $option_1_count / $total_vote_count * 100;
+                $option_2_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_2')->count();
+                $option_2_count = $option_2_count / $total_vote_count * 100;
+                $option_3_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_3')->count();
+                $option_3_count = $option_3_count / $total_vote_count * 100;
+                $option_4_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_4')->count();
+                $option_4_count = $option_4_count / $total_vote_count * 100;
+            }
+            $post->my_voted_option = $my_voted_option;
+
+            $post->total_vote_count = $total_vote_count;
+            $post->option_1_count = $option_1_count;
+            $post->option_2_count = $option_2_count;
+            $post->option_3_count = $option_3_count;
+            $post->option_4_count = $option_4_count;
+
+
+            $post->comment_count = $comment_count;
+            $post->like_count = $like_count;
+            $post->like_users = $like_users;
+            $post->user = $postby;
+
+
+            return response()->json([
+                'status' => true,
+                'action' =>  'Feed',
+                'data' => $post
+            ]);
+        }
+        else{
+            return response()->json([
+                'status' => false,
+                'action' =>  'Post not Found',
+            ]);
+        }
     }
 }

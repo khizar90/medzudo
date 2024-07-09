@@ -61,12 +61,16 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::prefix('post')->group(function () {
         Route::post('create', [CommunityPostController::class, 'create']);
+        Route::get('detail/{post_id}', [CommunityPostController::class, 'detail']);
         Route::get('like/{post_id}', [CommunityPostController::class, 'like']);
+        Route::get('like/list/{post_id}', [CommunityPostController::class, 'likeList']);
         Route::get('save/{post_id}', [CommunityPostController::class, 'save']);
         Route::get('delete/{post_id}', [CommunityPostController::class, 'delete']);
         Route::post('comment', [CommunityPostController::class, 'comment']);
         Route::get('comment/delete/{comment_id}', [CommunityPostController::class, 'deleteComment']);
         Route::get('comment/like/{comment_id}', [CommunityPostController::class, 'likeComment']);
+        Route::get('comment/list/{post_id}', [CommunityPostController::class, 'commentList']);
+        Route::get('comment/replies/{comment_id}', [CommunityPostController::class, 'commentReplies']);
         Route::post('vote', [CommunityPostController::class, 'vote']);
 
     });
