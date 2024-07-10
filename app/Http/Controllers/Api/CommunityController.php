@@ -470,13 +470,16 @@ class CommunityController extends Controller
                             $my_voted_option = $checkVote->option;
                         }
                         $option_1_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_1')->count();
-                        $option_1_count = $option_1_count / $total_vote_count * 100;
                         $option_2_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_2')->count();
-                        $option_2_count = $option_2_count / $total_vote_count * 100;
                         $option_3_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_3')->count();
-                        $option_3_count = $option_3_count / $total_vote_count * 100;
                         $option_4_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_4')->count();
-                        $option_4_count = $option_4_count / $total_vote_count * 100;
+
+                        if ($total_vote_count > 0) {
+                            $option_1_count = $option_1_count / $total_vote_count * 100;
+                            $option_2_count = $option_2_count / $total_vote_count * 100;
+                            $option_3_count = $option_3_count / $total_vote_count * 100;
+                            $option_4_count = $option_4_count / $total_vote_count * 100;
+                        }
                     }
                     $post->my_voted_option = $my_voted_option;
 
