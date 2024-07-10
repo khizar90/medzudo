@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Api\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
+use App\Models\Category;
+use App\Models\Community;
+use App\Models\CommunityJoinRequest;
+use App\Models\CommunityPicture;
 use App\Models\User;
 use App\Models\UserDevice;
 use Illuminate\Http\Request;
@@ -13,7 +17,7 @@ class WebController extends Controller
 {
     public function login(LoginRequest $request)
     {
-        $user = User::select('uuid', 'first_name', 'last_name', 'username', 'email', 'image','password')->where('email', $request->email)->first();
+        $user = User::select('uuid', 'first_name', 'last_name', 'username', 'email', 'image', 'password')->where('email', $request->email)->first();
         // $interest = UserInterest::where('user_id', $user->uuid)->first();
         // if ($interest) {
         //     $user->interest_add = true;
@@ -46,6 +50,17 @@ class WebController extends Controller
         return response()->json([
             'status' => false,
             'action' => "Account not Found",
+        ]);
+    }
+
+    public function myCommunity(Request $request)
+    {
+        $user = User::find($request->user()->uuid);
+        $myCommunities = Community::select('id', 'cover', 'logo', 'name')->where('user_id', $user->uuid)->latest()->limit(12)->get();
+        return response()->json([
+            'status' => true,
+            'action' => "My Communities",
+            'data' => $myCommunities,
         ]);
     }
 }

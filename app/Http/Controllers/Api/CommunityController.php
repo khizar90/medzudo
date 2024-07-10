@@ -445,7 +445,7 @@ class CommunityController extends Controller
                     $saved = CommunityPostSave::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
                     $post->media = empty($post->media) ? [] : explode(',', $post->media);
                     $likes = CommunityPostLike::where('post_id', $post->id)->latest()->limit(3)->pluck('user_id');
-                    $like_users = User::select('uuid', 'first_name', 'last_name')->whereIn('uuid', $likes)->where('uuid', '!=', $user->uuid)->get();
+                    $like_users = User::select('uuid', 'first_name', 'last_name', 'image')->whereIn('uuid', $likes)->get();
                     if ($likestatus) {
                         $post->is_liked = true;
                     } else {
