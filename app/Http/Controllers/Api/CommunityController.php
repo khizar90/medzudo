@@ -14,6 +14,7 @@ use App\Http\Requests\Api\Community\CreateCommunityRequest;
 use App\Models\BlockList;
 use App\Models\Category;
 use App\Models\Community;
+use App\Models\CommunityBlockList;
 use App\Models\CommunityCategories;
 use App\Models\CommunityCourse;
 use App\Models\CommunityCourseCertificate;
@@ -1376,6 +1377,41 @@ class CommunityController extends Controller
         return response()->json([
             'status' => true,
             'action' =>  'Status Change',
+        ]);
+    }
+
+    public function blockUser(Request $request, $community_id, $user_id)
+    {
+        $find = CommunityBlockList::where('user_id', $user_id)->where('community_id', $community_id)->first();
+        if ($find) {
+            $find->delete();
+            return response()->json([
+                'status' => true,
+                'action' =>  'User UnBLock',
+            ]);
+        }
+        $create = new CommunityBlockList();
+        $create->community_id = $community_id;
+        $create->user_id = $user_id;
+        $create->save();
+
+        CommunityJoinRequest::where('community_id', $community_id)->where('user_id', $user_id)->delete();
+        return response()->json([
+            'status' => true,
+            'action' =>  'User BLock',
+        ]);
+    }
+    public function blockList(Request $request, $community_id)
+    {
+        $block_ids = CommunityBlockList::where('community_id', $community_id)->pluck('user_id');
+        $blockUsers = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $block_ids)->paginate(12);
+        foreach ($blockUsers as $block) {
+            $block->block = true;
+        }
+        return response()->json([
+            'status' => true,
+            'action' =>  'Block list',
+            'data' => $blockUsers
         ]);
     }
 }
