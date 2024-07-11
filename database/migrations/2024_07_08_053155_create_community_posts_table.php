@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignUuid('user_id')->references('uuid')->on('users')->onDelete('cascade');
             $table->unsignedBigInteger('community_id');
-            $table->string('media')->default('');
+            $table->longText('media')->default('');
             $table->string('thumbnail')->default('');
             $table->longText('caption')->default('');
             $table->string('option_1')->default('');

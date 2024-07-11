@@ -95,7 +95,7 @@ class CommunityController extends Controller
         $joinRequest = new CommunityJoinRequest();
         $joinRequest->user_id = $user->uuid;
         $joinRequest->community_id = $new->id;
-        $joinRequest->status = 'accept';
+        $joinRequest->status = 'owner';
         $joinRequest->save();
 
         return response()->json([
@@ -281,8 +281,8 @@ class CommunityController extends Controller
             $my->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $my->id)->get();
             $my->pictures = $pictures;
-            $my->participant_count = CommunityJoinRequest::where('community_id', $my->id)->where('status', 'accept')->count();
-            $participantIds = CommunityJoinRequest::where('community_id', $my->id)->where('status', 'accept')->pluck('user_id');
+            $my->participant_count = CommunityJoinRequest::where('community_id', $my->id)->where('status', '!=', 'pending')->count();
+            $participantIds = CommunityJoinRequest::where('community_id', $my->id)->where('status', '!=', 'pending')->pluck('user_id');
             $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
             $my->participants = $participants;
         }
@@ -296,8 +296,8 @@ class CommunityController extends Controller
             $all->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $all->id)->get();
             $all->pictures = $pictures;
-            $all->participant_count = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->count();
-            $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->pluck('user_id');
+            $all->participant_count = CommunityJoinRequest::where('community_id', $all->id)->where('status', '!=', 'pending')->count();
+            $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', '!=', 'pending')->pluck('user_id');
             $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
             $all->participants = $participants;
         }
@@ -326,8 +326,8 @@ class CommunityController extends Controller
                 $item->categories = $categories;
                 $pictures = CommunityPicture::where('community_id', $item->id)->get();
                 $item->pictures = $pictures;
-                $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', 'accept')->count();
-                $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', 'accept')->pluck('user_id');
+                $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->count();
+                $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->pluck('user_id');
                 $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
                 $item->participants = $participants;
             }
@@ -351,8 +351,8 @@ class CommunityController extends Controller
                 $all->categories = $categories;
                 $pictures = CommunityPicture::where('community_id', $all->id)->get();
                 $all->pictures = $pictures;
-                $all->participant_count = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->count();
-                $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->pluck('user_id');
+                $all->participant_count = CommunityJoinRequest::where('community_id', $all->id)->where('status', '!=', 'pending')->count();
+                $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', '!=', 'pending')->pluck('user_id');
                 $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
                 $all->participants = $participants;
             }
@@ -379,8 +379,8 @@ class CommunityController extends Controller
             $all->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $all->id)->get();
             $all->pictures = $pictures;
-            $all->participant_count = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->count();
-            $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', 'accept')->pluck('user_id');
+            $all->participant_count = CommunityJoinRequest::where('community_id', $all->id)->where('status', '!=', 'pending')->count();
+            $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', '!=', 'pending')->pluck('user_id');
             $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
             $all->participants = $participants;
         }
@@ -391,10 +391,16 @@ class CommunityController extends Controller
         ]);
     }
 
-    public function detail(Request $request, $community_id, $type)
+    public function detail(Request $request, $community_id, $type, $sub_type = null)
     {
-        $user = User::find($request->user()->uuid);
+        $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $request->user()->uuid)->first();
         $community = Community::find($community_id);
+        $userCheck = CommunityJoinRequest::where('user_id', $user->uuid)->where('community_id', $community_id)->first();
+        if ($userCheck) {
+            if ($userCheck->status != 'accept' && $userCheck->status != 'pending') {
+                $user->account_type = $userCheck->status;
+            }
+        }
         if ($community) {
 
             if ($type == 'courses') {
@@ -412,6 +418,7 @@ class CommunityController extends Controller
                 }
                 return response()->json([
                     'status' => true,
+                    'user' => $user,
                     'action' =>  'Course  list',
                     'data' => $courses
                 ]);
@@ -422,14 +429,15 @@ class CommunityController extends Controller
                 $community->categories = $categories;
                 $pictures = CommunityPicture::where('community_id', $community->id)->get();
                 $community->pictures = $pictures;
-                $community->participant_count = CommunityJoinRequest::where('community_id', $community->id)->where('status', 'accept')->count();
-                $participantIds = CommunityJoinRequest::where('community_id', $community->id)->where('status', 'accept')->pluck('user_id');
+                $community->participant_count = CommunityJoinRequest::where('community_id', $community->id)->where('status', '!=', 'pending')->count();
+                $participantIds = CommunityJoinRequest::where('community_id', $community->id)->where('status', '!=', 'pending')->pluck('user_id');
                 $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
                 $community->participants = $participants;
                 $community->sponsor = CommunitySponsor::where('community_id', $community->id)->get();
                 $community->user =  User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $community->user_id)->first();
                 return response()->json([
                     'status' => true,
+                    'user' => $user,
                     'action' =>  'About',
                     'data' => $community
                 ]);
@@ -469,10 +477,11 @@ class CommunityController extends Controller
                         if ($checkVote) {
                             $my_voted_option = $checkVote->option;
                         }
-                        $option_1_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_1')->count();
-                        $option_2_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_2')->count();
-                        $option_3_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_3')->count();
-                        $option_4_count = CommunityPostVote::where('post_id', $post->id)->where('option', 'option_4')->count();
+                        $option_1_count = CommunityPostVote::where('post_id', $post->id)->where('option', 1)->count();
+                        $option_2_count = CommunityPostVote::where('post_id', $post->id)->where('option', 2)->count();
+                        $option_3_count = CommunityPostVote::where('post_id', $post->id)->where('option', 3)->count();
+                        $option_4_count = CommunityPostVote::where('post_id', $post->id)->where('option', 4)->count();
+
 
                         if ($total_vote_count > 0) {
                             $option_1_count = $option_1_count / $total_vote_count * 100;
@@ -498,8 +507,49 @@ class CommunityController extends Controller
 
                 return response()->json([
                     'status' => true,
+                    'user' => $user,
                     'action' =>  'Feed',
                     'data' => $posts
+                ]);
+            }
+
+            if ($type == 'members') {
+                $userIds = CommunityJoinRequest::where('status', '!=', 'pending')->where('community_id', $community_id)->pluck('user_id');
+                $members = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+
+
+                if ($sub_type == 'moderator') {
+                    $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', 'moderator')->pluck('user_id');
+                    $members = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+                }
+                if ($sub_type == 'admin') {
+                    $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', 'admin')->pluck('user_id');
+                    $members = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+                }
+                if ($sub_type == 'owner') {
+                    $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', 'owner')->pluck('user_id');
+                    $members = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+                }
+
+                foreach ($members as $item) {
+                    $check = CommunityJoinRequest::where('community_id', $community_id)->where('user_id', $item->uuid)->first();
+                    if ($check->status == 'moderator') {
+                        $item->account_type = 'moderator';
+                    }
+                    if ($check->status == 'owner') {
+                        $item->account_type = 'owner';
+                    }
+                    if ($check->status == 'admin') {
+                        $item->account_type = 'admin';
+                    }
+                }
+
+
+                return response()->json([
+                    'status' => true,
+                    'user' => $user,
+                    'action' =>  'Members',
+                    'data' => $members
                 ]);
             }
         }
@@ -629,8 +679,8 @@ class CommunityController extends Controller
             $item->categories = $categories;
             $pictures = CommunityPicture::where('community_id', $item->id)->get();
             $item->pictures = $pictures;
-            $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', 'accept')->count();
-            $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', 'accept')->pluck('user_id');
+            $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->count();
+            $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->pluck('user_id');
             $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
             $item->participants = $participants;
         }
@@ -1289,6 +1339,43 @@ class CommunityController extends Controller
             'status' => true,
             'action' =>  'Course Purchase',
             'data' => $create
+        ]);
+    }
+
+
+    public function listSimpleUsers(Request $request, $community_id, $type)
+    {
+        if ($type == 'simple') {
+            $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', 'accept')->pluck('user_id');
+
+            $users = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+        }
+        if ($type == 'administrator') {
+            $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', '!=', 'accept')->where('status', '!=', 'pending')->pluck('user_id');
+            $users = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+        }
+        return response()->json([
+            'status' => true,
+            'action' =>  'Users',
+            'data' => $users
+        ]);
+    }
+    public function chnageUserStatus(Request $request, $community_id, $type, $user_id)
+    {
+
+        $check = CommunityJoinRequest::where('community_id', $community_id)->where('user_id', $user_id)->first();
+        if ($type != 'remove') {
+            $check->status = $type;
+            $check->save();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Status Change',
+            ]);
+        }
+        $check->delete();
+        return response()->json([
+            'status' => true,
+            'action' =>  'Status Change',
         ]);
     }
 }

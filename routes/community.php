@@ -28,7 +28,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('folder/media/{folder_id}', [CommunityController::class, 'folderMedia']);
     Route::get('media/home/{community_id}', [CommunityController::class, 'communitMediaHome']);
     Route::get('media/list/{type}/{community_id}', [CommunityController::class, 'listFolder']);
-    Route::get('detail/{communty_id}/{type}', [CommunityController::class, 'detail']);
+    Route::get('detail/{communty_id}/{type}/{sub_type?}', [CommunityController::class, 'detail']);
+    Route::get('change/user/status/{community_id}/{type}/{user_id}', [CommunityController::class, 'chnageUserStatus']);
+    Route::get('list/users/{community_id}/{type}', [CommunityController::class, 'listSimpleUsers']);
 
     Route::prefix('course')->group(function () {
         Route::post('create', [CommunityController::class, 'createCourse']);

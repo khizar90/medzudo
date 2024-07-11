@@ -271,7 +271,7 @@ class CommunityPostController extends Controller
     public function vote(CommunityPostVoteRequest $request)
     {
         $user = User::find($request->user()->uuid);
-        $find = CommunityPostVote::where('user_id', $user->uuid)->where('post_id', $request->post_id)->where('option', $request->option)->first();
+        $find = CommunityPostVote::where('user_id', $user->uuid)->where('post_id', $request->post_id)->first();
         if ($find) {
             $find->delete();
             return response()->json([
