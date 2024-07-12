@@ -219,6 +219,7 @@ class CommunityPostController extends Controller
     {
         $post = CommunityPostComment::find($comment_id);
         if ($post) {
+            CommunityPostComment::where('parent_id',$post->id)->delete();
             $post->delete();
             return response()->json([
                 'status' => true,
