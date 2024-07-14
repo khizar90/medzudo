@@ -80,6 +80,11 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::prefix('meetup')->group(function () {
         Route::post('create', [CommunityMeetupController::class, 'create']);
+        Route::post('edit', [CommunityMeetupController::class, 'edit']);
+        Route::get('detail/{meetup_id}', [CommunityMeetupController::class, 'detail']);
+        Route::get('delete/{meetup_id}', [CommunityMeetupController::class, 'delete']);
+        Route::get('save/{meetup_id}', [CommunityMeetupController::class, 'save']);
+        Route::get('join/request/{type}/{meetup_id}', [CommunityMeetupController::class, 'joinRequest']);
 
     });
 });

@@ -25,6 +25,9 @@ use App\Models\CommunityCourseSectionVideoSeen;
 use App\Models\CommunityFolder;
 use App\Models\CommunityJoinRequest;
 use App\Models\CommunityMedia;
+use App\Models\CommunityMeetup;
+use App\Models\CommunityMeetupJoinRequest;
+use App\Models\CommunityMeetupSave;
 use App\Models\CommunityPicture;
 use App\Models\CommunityPinnedMedia;
 use App\Models\CommunityPost;
@@ -571,6 +574,83 @@ class CommunityController extends Controller
                         'folders' => $folders,
                         'media' => $media
                     )
+                ]);
+            }
+
+            if ($type == 'meetups') {
+                $meetups = CommunityMeetup::select('id', 'cover', 'title', 'organizer', 'mode', 'category', 'location', 'lat', 'lng', 'start_date', 'start_time', 'start_timestamp', 'end_date', 'end_time', 'end_timestamp', 'price', 'status')->where('community_id', $community_id)->where('status', 0)->latest()->paginate(12);
+
+                if ($sub_type == 'my') {
+                    $meetups = CommunityMeetup::select('id', 'cover', 'title', 'organizer', 'mode', 'category', 'location', 'lat', 'lng', 'start_date', 'start_time', 'start_timestamp', 'end_date', 'end_time', 'end_timestamp', 'price', 'status')->where('community_id', $community_id)->where('user_id', $user->uuid)->latest()->paginate(12);
+                }
+                if ($sub_type == 'saved') {
+                    $meetupIds = CommunityMeetupSave::where('user_id', $user->uuid)->pluck('meetup_id');
+                    $meetups = [];
+                    foreach ($meetupIds as $item) {
+                        $meetup =  CommunityMeetup::select('id', 'cover', 'title', 'organizer', 'mode', 'category', 'location', 'lat', 'lng', 'start_date', 'start_time', 'start_timestamp', 'end_date', 'end_time', 'end_timestamp', 'price', 'status')->where('id', $item)->first();
+                        $meetups[] = $meetup;
+                    }
+                    $count  = count($meetups);
+                    $meetups = collect($meetups);
+                    $meetups = $meetups->forPage($request->page, 12)->values();
+
+                    return response()->json([
+                        'status' => true,
+                        'action' =>  'Meetups',
+                        'user' => $user,
+                        'data' => array(
+                            'data' => $meetups,
+                            'total' => $count
+                        )
+                    ]);
+                }
+                if ($sub_type == 'joined') {
+                    $meetupIds = CommunityMeetupJoinRequest::where('user_id', $user->uuid)->where('status', 'accept')->pluck('meetup_id');
+                    $meetups = [];
+                    foreach ($meetupIds as $item) {
+                        $meetup =  CommunityMeetup::select('id', 'cover', 'title', 'organizer', 'mode', 'category', 'location', 'lat', 'lng', 'start_date', 'start_time', 'start_timestamp', 'end_date', 'end_time', 'end_timestamp', 'price', 'status')->where('status',1)->where('id', $item)->first();
+                        $meetups[] = $meetup;
+                    }
+                    $count  = count($meetups);
+                    $meetups = collect($meetups);
+                    $meetups = $meetups->forPage($request->page, 12)->values();
+
+                    return response()->json([
+                        'status' => true,
+                        'action' =>  'Meetups',
+                        'user' => $user,
+                        'data' => array(
+                            'data' => $meetups,
+                            'total' => $count
+                        )
+                    ]);
+                }
+                if ($sub_type == 'completed') {
+                    $meetupIds = CommunityMeetupJoinRequest::where('user_id', $user->uuid)->where('status', 'accept')->pluck('meetup_id');
+                    $meetups = [];
+                    foreach ($meetupIds as $item) {
+                        $meetup =  CommunityMeetup::select('id', 'cover', 'title', 'organizer', 'mode', 'category', 'location', 'lat', 'lng', 'start_date', 'start_time', 'start_timestamp', 'end_date', 'end_time', 'end_timestamp', 'price', 'status')->where('status',2)->where('id', $item)->first();
+                        $meetups[] = $meetup;
+                    }
+                    $count  = count($meetups);
+                    $meetups = collect($meetups);
+                    $meetups = $meetups->forPage($request->page, 12)->values();
+
+                    return response()->json([
+                        'status' => true,
+                        'action' =>  'Meetups',
+                        'user' => $user,
+                        'data' => array(
+                            'data' => $meetups,
+                            'total' => $count
+                        )
+                    ]);
+                }
+                return response()->json([
+                    'status' => true,
+                    'action' =>  'Meetups',
+                    'user' => $user,
+                    'data' => $meetups
                 ]);
             }
         }
