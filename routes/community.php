@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\CommunityController;
+use App\Http\Controllers\Api\CommunityMeetupController;
 use App\Http\Controllers\Api\CommunityPostController;
 use Illuminate\Support\Facades\Route;
 
@@ -76,6 +77,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('comment/list/{post_id}', [CommunityPostController::class, 'commentList']);
         Route::get('comment/replies/{comment_id}', [CommunityPostController::class, 'commentReplies']);
         Route::post('vote', [CommunityPostController::class, 'vote']);
+    });
+    Route::prefix('meetup')->group(function () {
+        Route::post('create', [CommunityMeetupController::class, 'create']);
 
     });
 });
