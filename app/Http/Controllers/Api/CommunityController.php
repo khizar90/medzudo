@@ -553,6 +553,26 @@ class CommunityController extends Controller
                     'data' => $members
                 ]);
             }
+            if ($type == 'media') {
+                $pinnedMedia = [];
+                $pinnedMediaIds = CommunityPinnedMedia::where('community_id', $community_id)->orderBy('id', 'desc')->limit(12)->pluck('media_id');
+                foreach ($pinnedMediaIds as $id) {
+                    $media = CommunityMedia::find($id);
+                    $pinnedMedia[] = $media;
+                }
+                $folders = CommunityFolder::where('community_id', $community_id)->limit(12)->get();
+                $media = CommunityMedia::where('community_id', $community_id)->where('folder_id', 0)->latest()->paginate(12);
+                return response()->json([
+                    'status' => true,
+                    'action' =>  'Media',
+                    'user' => $user,
+                    'data' => array(
+                        'pinned_media' => $pinnedMedia,
+                        'folders' => $folders,
+                        'media' => $media
+                    )
+                ]);
+            }
         }
         return response()->json([
             'status' => false,
@@ -1348,12 +1368,23 @@ class CommunityController extends Controller
     {
         if ($type == 'simple') {
             $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', 'accept')->pluck('user_id');
-
             $users = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
         }
         if ($type == 'administrator') {
             $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', '!=', 'accept')->where('status', '!=', 'pending')->pluck('user_id');
             $users = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+            foreach ($users as $item) {
+                $check = CommunityJoinRequest::where('community_id', $community_id)->where('user_id', $item->uuid)->first();
+                if ($check->status == 'moderator') {
+                    $item->account_type = 'moderator';
+                }
+                if ($check->status == 'owner') {
+                    $item->account_type = 'owner';
+                }
+                if ($check->status == 'admin') {
+                    $item->account_type = 'admin';
+                }
+            }
         }
         return response()->json([
             'status' => true,

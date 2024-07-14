@@ -35,6 +35,7 @@ use App\Models\UserLink;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -287,7 +288,7 @@ class AuthController extends Controller
 
     public function logout(LogoutRequest $request)
     {
-        $user =User::find($request->user_id);
+        $user = User::find($request->user_id);
         UserDevice::where('user_id', $request->user_id)->where('device_id', $request->device_id)->delete();
         // $user->tokens()->delete();
         return response()->json([
@@ -302,7 +303,7 @@ class AuthController extends Controller
         if ($user) {
             if (Hash::check($request->password, $user->password)) {
                 Follow::where('user_id', $request->user_id)->orWhere('follow_id', $request->user_id)->delete();
-                $user->tokens()->delete();
+                // $user->tokens()->delete();
 
                 $user->delete();
 
@@ -476,25 +477,19 @@ class AuthController extends Controller
         }
     }
 
-    public function editProfile(EditProfileRequest $request)
+    public function editProfile(Request $request)
     {
 
-        $user = User::find($request->user_id);
+        $user = User::find($request->user()->uuid);
         if ($user) {
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
-                // $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/profile', $file);
-                // $path = Storage::disk('s3')->url($path);
-                $extension = $file->getClientOriginalExtension();
-                $mime = explode('/', $file->getClientMimeType());
-                $filename = time() . '-' . uniqid() . '.' . $extension;
-                if ($file->move('uploads/user/' . $request->user_id . '/profile/', $filename))
-                    $path = '/uploads/user/' . $request->user_id . '/profile/' . $filename;
-                $user->image = $path;
+                $path = Storage::disk('local')->put('user/' . $user->uuid . '/profile', $file);
+                $user->image = '/uploads/' . $path;
             }
 
             if ($request->has('username')) {
-                if (User::where('username', $request->username)->where('uuid', '!=', $request->user_id)->exists()) {
+                if (User::where('username', $request->username)->where('uuid', '!=', $user->uuid)->exists()) {
                     return response()->json([
                         'status' => false,
                         'action' => 'Username already taken'
@@ -505,7 +500,7 @@ class AuthController extends Controller
             }
 
             if ($request->has('email')) {
-                if (User::where('email', $request->email)->where('uuid', '!=', $request->user_id)->exists()) {
+                if (User::where('email', $request->email)->where('uuid', '!=', $user->uuid)->exists()) {
                     return response()->json([
                         'status' => false,
                         'action' => 'Email Address is already registered'
@@ -607,11 +602,11 @@ class AuthController extends Controller
                     $extension = $file->getClientOriginalExtension();
                     $mime = explode('/', $file->getClientMimeType());
                     $filename = time() . '-' . uniqid() . '.' . $extension;
-                    if ($file->move('uploads/user/' . $request->user_id . '/gallery/', $filename)) {
-                        $imagePaths = '/uploads/user/' . $request->user_id . '/gallery/' . $filename;
+                    if ($file->move('uploads/user/' . $user->uuid . '/gallery/', $filename)) {
+                        $imagePaths = '/uploads/user/' . $user->uuid . '/gallery/' . $filename;
                     }
                     $gallery = new UserGallery();
-                    $gallery->user_id = $request->user_id;
+                    $gallery->user_id = $user->uuid;
                     $gallery->image = $imagePaths;
                     $gallery->save();
                 }

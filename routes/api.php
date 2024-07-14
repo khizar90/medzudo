@@ -41,11 +41,14 @@ Route::post('user/recover', [AuthController::class, 'recover']);
 Route::post('user/new/password', [AuthController::class, 'newPassword']);
 Route::post('user/logout', [AuthController::class, 'logout']);
 
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('edit/profile', [AuthController::class, 'editProfile']);
+});
 Route::get('blocklist/{id}', [AuthController::class, 'blockList']);
 Route::post('change/password', [AuthController::class, 'changePassword']);
 Route::post('edit/image', [AuthController::class, 'editImage']);
 Route::get('remove/image/{id}', [AuthController::class, 'removeImage']);
-Route::post('edit/profile', [AuthController::class, 'editProfile']);
 Route::post('get/verify', [AuthController::class, 'getVerify']);
 Route::post('user/add/detail', [AuthController::class, 'addDetail']);
 Route::get('user/get/detail/{type}/{user_id}', [AuthController::class, 'getDetail']);
@@ -135,7 +138,3 @@ Route::get('following/{id}', [UserController::class, 'following']);
 
 
 Route::post('user/report', [ReportController::class, 'report']);
-
-
-
-
