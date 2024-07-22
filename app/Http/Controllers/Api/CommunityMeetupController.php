@@ -174,6 +174,7 @@ class CommunityMeetupController extends Controller
             $create = new CommunityMeetupJoinRequest();
             $create->user_id = $user->uuid;
             $create->meetup_id = $meetup_id;
+            $create->status = 'accept';
             $create->save();
             return response()->json([
                 'status' => true,
@@ -181,20 +182,6 @@ class CommunityMeetupController extends Controller
             ]);
         }
 
-        if ($type == 'accept') {
-            if ($find) {
-                $find->status = 'accept';
-                $find->save();
-                return response()->json([
-                    'status' => true,
-                    'action' => 'Request accept',
-                ]);
-            }
-            return response()->json([
-                'status' => false,
-                'action' => 'Request not found',
-            ]);
-        }
         if ($type == 'leave') {
             if ($find) {
                 $find->delete();
@@ -225,22 +212,9 @@ class CommunityMeetupController extends Controller
             $meetup->reason = '';
             $request_check = CommunityMeetupJoinRequest::where('meetup_id', $meetup_id)->where('user_id', $user->uuid)->first();
             if ($request_check) {
-                if ($request_check->status == 'pending') {
-                    $meetup->is_join = 'cancel';
-                }
                 if ($request_check->status == 'accept') {
                     $meetup->is_join = 'leave';
-                }
-                if ($request_check->status == 'leave') {
-                    $meetup->is_join = 'join';
-                }
-                if ($request_check->status == 'invite') {
-                    $meetup->is_join = 'accept_invite';
-                }
-                if ($request_check->status == 'reject') {
-                    $meetup->is_join = 'rejected';
-                    $meetup->reason = $request_check->reason;
-                }
+                }    
             } else {
                 $meetup->is_join = 'join';
             }
