@@ -485,14 +485,6 @@ class CommunityController extends Controller
                         $option_2_count = CommunityPostVote::where('post_id', $post->id)->where('option', 2)->count();
                         $option_3_count = CommunityPostVote::where('post_id', $post->id)->where('option', 3)->count();
                         $option_4_count = CommunityPostVote::where('post_id', $post->id)->where('option', 4)->count();
-
-
-                        if ($total_vote_count > 0) {
-                            $option_1_count = $option_1_count / $total_vote_count * 100;
-                            $option_2_count = $option_2_count / $total_vote_count * 100;
-                            $option_3_count = $option_3_count / $total_vote_count * 100;
-                            $option_4_count = $option_4_count / $total_vote_count * 100;
-                        }
                     }
                     $post->my_voted_option = $my_voted_option;
 
@@ -608,7 +600,7 @@ class CommunityController extends Controller
                     $meetupIds = CommunityMeetupJoinRequest::where('user_id', $user->uuid)->where('status', 'accept')->pluck('meetup_id');
                     $meetups = [];
                     foreach ($meetupIds as $item) {
-                        $meetup =  CommunityMeetup::select('id', 'cover', 'title', 'organizer', 'mode', 'category', 'location', 'lat', 'lng', 'start_date', 'start_time', 'start_timestamp', 'end_date', 'end_time', 'end_timestamp', 'price', 'status')->where('status',1)->where('id', $item)->first();
+                        $meetup =  CommunityMeetup::select('id', 'cover', 'title', 'organizer', 'mode', 'category', 'location', 'lat', 'lng', 'start_date', 'start_time', 'start_timestamp', 'end_date', 'end_time', 'end_timestamp', 'price', 'status')->where('status', 1)->where('id', $item)->first();
                         $meetups[] = $meetup;
                     }
                     $count  = count($meetups);
@@ -629,7 +621,7 @@ class CommunityController extends Controller
                     $meetupIds = CommunityMeetupJoinRequest::where('user_id', $user->uuid)->where('status', 'accept')->pluck('meetup_id');
                     $meetups = [];
                     foreach ($meetupIds as $item) {
-                        $meetup =  CommunityMeetup::select('id', 'cover', 'title', 'organizer', 'mode', 'category', 'location', 'lat', 'lng', 'start_date', 'start_time', 'start_timestamp', 'end_date', 'end_time', 'end_timestamp', 'price', 'status')->where('status',2)->where('id', $item)->first();
+                        $meetup =  CommunityMeetup::select('id', 'cover', 'title', 'organizer', 'mode', 'category', 'location', 'lat', 'lng', 'start_date', 'start_time', 'start_timestamp', 'end_date', 'end_time', 'end_timestamp', 'price', 'status')->where('status', 2)->where('id', $item)->first();
                         $meetups[] = $meetup;
                     }
                     $count  = count($meetups);
