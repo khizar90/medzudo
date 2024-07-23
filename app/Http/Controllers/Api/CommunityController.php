@@ -22,6 +22,7 @@ use App\Models\CommunityCoursePurchase;
 use App\Models\CommunityCourseSection;
 use App\Models\CommunityCourseSectionVideo;
 use App\Models\CommunityCourseSectionVideoSeen;
+use App\Models\CommunityFeatureRequest;
 use App\Models\CommunityFolder;
 use App\Models\CommunityJoinRequest;
 use App\Models\CommunityMedia;
@@ -438,7 +439,12 @@ class CommunityController extends Controller
                 $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
                 $community->participants = $participants;
                 $community->sponsor = CommunitySponsor::where('community_id', $community->id)->get();
+                $comIds = CommunityFeatureRequest::where('community_id', $community_id)->where('status', 2)->pluck('request_id');
+
+                $feature = Community::whereIn('id', $comIds)->limit(3)->pluck('cover');
+                $community->feature = $feature;
                 $community->user =  User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $community->user_id)->first();
+
                 return response()->json([
                     'status' => true,
                     'user' => $user,
@@ -643,6 +649,35 @@ class CommunityController extends Controller
                     'action' =>  'Meetups',
                     'user' => $user,
                     'data' => $meetups
+                ]);
+            }
+            if ($type == 'feature') {
+                $comIds = CommunityFeatureRequest::where('community_id', $community_id)->where('status', 2)->pluck('request_id');
+                $communities = Community::whereIn('id', $comIds)->latest()->paginate(12);
+                foreach ($communities as $item) {
+                    $categoriesIds  = explode(',', $item->categories);
+                    $categories = Category::whereIn('id', $categoriesIds)->get();
+                    $item->categories = $categories;
+                    $pictures = CommunityPicture::where('community_id', $item->id)->get();
+                    $item->pictures = $pictures;
+                    $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->count();
+                    $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->pluck('user_id');
+                    $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+                    $item->participants = $participants;
+
+
+                    $check = CommunityFeatureRequest::where('community_id', $community_id)->where('request_id', $item->id)->first();
+                    if ($check) {
+                        $item->status = $check->status;
+                    } else {
+                        $item->status = 0;
+                    }
+                }
+                return response()->json([
+                    'status' => true,
+                    'action' =>  'Communities',
+                    'user' => $user,
+                    'data' => $communities
                 ]);
             }
         }
@@ -1516,5 +1551,83 @@ class CommunityController extends Controller
             'action' =>  'Block list',
             'data' => $blockUsers
         ]);
+    }
+
+    public function featureCommunityList(Request $request, $community_id)
+    {
+        $communities = Community::where('id', '!=', $community_id)->latest()->paginate(12);
+        foreach ($communities as $item) {
+            $categoriesIds  = explode(',', $item->categories);
+            $categories = Category::whereIn('id', $categoriesIds)->get();
+            $item->categories = $categories;
+            $pictures = CommunityPicture::where('community_id', $item->id)->get();
+            $item->pictures = $pictures;
+            $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->count();
+            $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->pluck('user_id');
+            $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+            $item->participants = $participants;
+
+
+            $check = CommunityFeatureRequest::where('community_id', $community_id)->where('request_id', $item->id)->first();
+            if ($check) {
+                $item->status = $check->status;
+            } else {
+                $item->status = 0;
+            }
+        }
+        return response()->json([
+            'status' => true,
+            'action' =>  'Community list',
+            'data' => $communities
+        ]);
+    }
+
+    public function featureRequest(Request $request, $type, $community_id, $request_id)
+    {
+        if ($type == 'send') {
+            $create = new CommunityFeatureRequest();
+            $create->community_id = $community_id;
+            $create->request_id = $request_id;
+            $create->status = 1;
+            $create->save();
+            return response()->json([
+                'status' => true,
+                'action' =>  'Request Send',
+            ]);
+        }
+
+        if ($type == 'accept') {
+            $find = CommunityFeatureRequest::where('community_id', $community_id)->where('request_id', $request_id)->first();
+            if ($find) {
+                $find->status = 2;
+                $find->save();
+            }
+            return response()->json([
+                'status' => true,
+                'action' =>  'Request Accept',
+            ]);
+        }
+
+        if ($type == 'remove') {
+            $find = CommunityFeatureRequest::where('community_id', $community_id)->where('request_id', $request_id)->first();
+            if ($find) {
+                $find->delete();
+            }
+            return response()->json([
+                'status' => true,
+                'action' =>  'Request Remove',
+            ]);
+        }
+        if ($type == 'decline') {
+            $find = CommunityFeatureRequest::where('community_id', $community_id)->where('request_id', $request_id)->first();
+            if ($find) {
+                $find->status = 3;
+                $find->save();
+            }
+            return response()->json([
+                'status' => true,
+                'action' =>  'Request Declined!',
+            ]);
+        }
     }
 }
