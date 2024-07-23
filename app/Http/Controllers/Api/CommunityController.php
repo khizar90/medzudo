@@ -1621,8 +1621,7 @@ class CommunityController extends Controller
         if ($type == 'decline') {
             $find = CommunityFeatureRequest::where('community_id', $community_id)->where('request_id', $request_id)->first();
             if ($find) {
-                $find->status = 3;
-                $find->save();
+                $find->delete();
             }
             return response()->json([
                 'status' => true,
