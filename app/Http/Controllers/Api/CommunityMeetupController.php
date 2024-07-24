@@ -47,7 +47,7 @@ class CommunityMeetupController extends Controller
         if ($request->has('file')) {
             $file1 = $request->file('file');
             $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/meetup', $file1);
-            $create->cover = '/uploads/' . $path;
+            $create->file = '/uploads/' . $path;
         }
         $create->save();
 
