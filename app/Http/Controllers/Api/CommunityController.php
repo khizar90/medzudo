@@ -7,6 +7,7 @@ use App\Http\Requests\Api\Community\CommunityAddFolderRequest;
 use App\Http\Requests\Api\Community\CommunityAddMediaRequest;
 use App\Http\Requests\Api\Community\CommunityEditFolderRequest;
 use App\Http\Requests\Api\Community\CommunityPurchaseCourseRequest;
+use App\Http\Requests\Api\Community\CommunityPurchaseRequest;
 use App\Http\Requests\Api\Community\CreateCommunityCourseRequest;
 use App\Http\Requests\Api\Community\CreateCommunityCourseSectionRequest;
 use App\Http\Requests\Api\Community\CreateCommunityCourseSectionVideoRequest;
@@ -36,6 +37,7 @@ use App\Models\CommunityPostComment;
 use App\Models\CommunityPostLike;
 use App\Models\CommunityPostSave;
 use App\Models\CommunityPostVote;
+use App\Models\CommunityPurchase;
 use App\Models\CommunitySectionSeen;
 use App\Models\CommunitySectionVideoSeen;
 use App\Models\CommunitySponsor;
@@ -290,6 +292,11 @@ class CommunityController extends Controller
             $participantIds = CommunityJoinRequest::where('community_id', $my->id)->where('status', '!=', 'pending')->pluck('user_id');
             $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
             $my->participants = $participants;
+            $is_purchase = CommunityPurchase::where('user_id', $user->uuid)->where('community_id', $my->id)->first();
+            $my->is_purchase = false;
+            if ($is_purchase) {
+                $my->is_purchase = true;
+            }
             $my->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $my->user_id)->first();
         }
 
@@ -306,6 +313,11 @@ class CommunityController extends Controller
             $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', '!=', 'pending')->pluck('user_id');
             $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
             $all->participants = $participants;
+            $is_purchase = CommunityPurchase::where('user_id', $user->uuid)->where('community_id', $all->id)->first();
+            $all->is_purchase = false;
+            if ($is_purchase) {
+                $all->is_purchase = true;
+            }
             $all->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $all->user_id)->first();
         }
 
@@ -337,6 +349,11 @@ class CommunityController extends Controller
                 $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->pluck('user_id');
                 $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
                 $item->participants = $participants;
+                $is_purchase = CommunityPurchase::where('user_id', $user->uuid)->where('community_id', $item->id)->first();
+                $item->is_purchase = false;
+                if ($is_purchase) {
+                    $item->is_purchase = true;
+                }
                 $item->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $item->user_id)->first();
             }
         }
@@ -363,6 +380,12 @@ class CommunityController extends Controller
                 $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', '!=', 'pending')->pluck('user_id');
                 $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
                 $all->participants = $participants;
+                $is_purchase = CommunityPurchase::where('user_id', $user->uuid)->where('community_id', $all->id)->first();
+                $all->is_purchase = false;
+                if ($is_purchase) {
+                    $all->is_purchase = true;
+                }
+                $all->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $all->user_id)->first();
             }
             return response()->json([
                 'status' => true,
@@ -379,6 +402,8 @@ class CommunityController extends Controller
     }
     public function categorySearch(Request $request, $category_id)
     {
+        $user = User::find($request->user()->uuid);
+
         $communityIds = CommunityCategories::where('category_id', $category_id)->pluck('community_id');
         $communities = Community::whereIn('id', $communityIds)->orderBy('id', 'desc')->paginate(12);
         foreach ($communities as $all) {
@@ -391,6 +416,12 @@ class CommunityController extends Controller
             $participantIds = CommunityJoinRequest::where('community_id', $all->id)->where('status', '!=', 'pending')->pluck('user_id');
             $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
             $all->participants = $participants;
+            $is_purchase = CommunityPurchase::where('user_id', $user->uuid)->where('community_id', $all->id)->first();
+            $all->is_purchase = false;
+            if ($is_purchase) {
+                $all->is_purchase = true;
+            }
+            $all->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $all->user_id)->first();
         }
         return response()->json([
             'status' => true,
@@ -1631,5 +1662,26 @@ class CommunityController extends Controller
                 'action' =>  'Request Declined!',
             ]);
         }
+    }
+
+    public function purchase(CommunityPurchaseRequest $request)
+    {
+        $user = User::find($request->user()->uuid);
+        $community = Community::find($request->community_id);
+        if ($community) {
+            $create = new CommunityPurchase();
+            $create->user_id = $user->uuid;
+            $create->community_id = $request->community_id;
+            $create->price = $request->price;
+            return response()->json([
+                'status' => true,
+                'action' =>  'Community Purchase!',
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'action' =>  'Community Not Found!',
+        ]);
     }
 }

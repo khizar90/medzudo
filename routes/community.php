@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('list/users/{community_id}/{type}', [CommunityController::class, 'listSimpleUsers']);
     Route::get('block/user/{community_id}/{user_id}', [CommunityController::class, 'blockUser']);
     Route::get('block/list/{community_id}', [CommunityController::class, 'blockList']);
+    Route::post('purchase', [CommunityController::class, 'purchase']);
 
     Route::prefix('course')->group(function () {
         Route::post('create', [CommunityController::class, 'createCourse']);
