@@ -212,11 +212,11 @@ class CommunityMeetupController extends Controller
             $meetup->reason = '';
             $request_check = CommunityMeetupJoinRequest::where('meetup_id', $meetup_id)->where('user_id', $user->uuid)->first();
             if ($request_check) {
-                if ($request_check->status == 'accept') {
-                    $meetup->is_join = 'leave';
-                }    
+                // if ($request_check->status == 'accept') {
+                $meetup->is_join = true;
+                // }    
             } else {
-                $meetup->is_join = 'join';
+                $meetup->is_join = false;
             }
 
             $is_save = CommunityMeetupSave::where('meetup_id', $meetup_id)->where('user_id', $user->uuid)->first();
@@ -238,6 +238,16 @@ class CommunityMeetupController extends Controller
         return response()->json([
             'status' => false,
             'action' => 'Meetup not found',
+        ]);
+    }
+    public function participantList(Request $request, $meetup_id)
+    {
+        $participantIds = CommunityMeetupJoinRequest::where('meetup_id', $meetup_id)->where('status', 'accept')->pluck('user_id');
+        $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->paginate(25);
+        return response()->json([
+            'status' => true,
+            'action' => 'Participants List',
+            'data' => $participants,
         ]);
     }
 }

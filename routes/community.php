@@ -85,6 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('delete/{meetup_id}', [CommunityMeetupController::class, 'delete']);
         Route::get('save/{meetup_id}', [CommunityMeetupController::class, 'save']);
         Route::get('join/request/{type}/{meetup_id}', [CommunityMeetupController::class, 'joinRequest']);
+        Route::get('participant/list/{meetup_id}', [CommunityMeetupController::class, 'participantList']);
     });
 
     Route::prefix('feature')->group(function () {
