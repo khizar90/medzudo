@@ -39,6 +39,8 @@ return new class extends Migration
             $table->longText('description');
             $table->longText('file')->default('');
             $table->integer('status')->default(0);
+            $table->longText('host_url');
+            $table->longText('viewer_url');
             $table->timestamps();
         });
     }

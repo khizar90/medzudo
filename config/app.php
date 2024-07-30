@@ -59,6 +59,8 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
+    'whereby_key' => 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmFwcGVhci5pbiIsImF1ZCI6Imh0dHBzOi8vYXBpLmFwcGVhci5pbi92MSIsImV4cCI6OTAwNzE5OTI1NDc0MDk5MSwiaWF0IjoxNzIyMzM1MDczLCJvcmdhbml6YXRpb25JZCI6MjU1MzU0LCJqdGkiOiJkYmMwZjM2ZS1kODY2LTQ5MzItYWEzMS0xNThmOTRiNzk2MmEifQ.UejJvDMcoihVogcg6okQk7bDJnA9AuhxPfFGMQfU9_g',
+    
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

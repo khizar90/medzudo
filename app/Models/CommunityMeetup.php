@@ -12,4 +12,10 @@ class CommunityMeetup extends Model
         'updated_at',
         'created_at'
     ];
+    protected $attributes = [
+        
+        'viewer_url' => '',
+        'host_url' => '',
+
+    ];
 }

@@ -12,7 +12,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->call(function () {
+            (new \App\Console\Commands\StartMeetup())->handle();
+            (new \App\Console\Commands\MeetupStatusChange())->handle();
+        })->everyMinute();
     }
 
     /**

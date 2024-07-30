@@ -1673,6 +1673,7 @@ class CommunityController extends Controller
             $create->user_id = $user->uuid;
             $create->community_id = $request->community_id;
             $create->price = $request->price;
+            $create->save();
             return response()->json([
                 'status' => true,
                 'action' =>  'Community Purchase!',
