@@ -8,4 +8,7 @@ Route::post('user/login', [WebController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('my/communities', [WebController::class, 'myCommunity']);
+    Route::prefix('community')->group(function () {
+        Route::get('courses/{community_id}', [WebController::class, 'listCourses']);
+    });
 });

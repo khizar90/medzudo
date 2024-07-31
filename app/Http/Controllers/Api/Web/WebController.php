@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
 use App\Models\Category;
 use App\Models\Community;
+use App\Models\CommunityCourse;
+use App\Models\CommunityCoursePurchase;
+use App\Models\CommunityCourseSection;
+use App\Models\CommunityCourseSectionVideo;
 use App\Models\CommunityJoinRequest;
 use App\Models\CommunityPicture;
 use App\Models\User;
@@ -61,6 +65,30 @@ class WebController extends Controller
             'status' => true,
             'action' => "My Communities",
             'data' => $myCommunities,
+        ]);
+    }
+
+    public function listCourses(Request $request,$community_id)
+    {
+        $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $request->user()->uuid)->first();
+
+        $courses = CommunityCourse::where('community_id', $community_id)->get();
+        foreach ($courses as $course) {
+            $course->section_count = CommunityCourseSection::where('course_id', $course->id)->count();
+            $duration  = CommunityCourseSectionVideo::where('course_id', $course->id)->sum('duration');
+            $course->duration_count = $duration;
+            $is_purchase = CommunityCoursePurchase::where('user_id', $user->uuid)->where('course_id', $course->id)->first();
+            if ($is_purchase) {
+                $course->is_purchase = true;
+            } else {
+                $course->is_purchase = false;
+            }
+        }
+        return response()->json([
+            'status' => true,
+            'user' => $user,
+            'action' =>  'Course list',
+            'data' => $courses
         ]);
     }
 }
