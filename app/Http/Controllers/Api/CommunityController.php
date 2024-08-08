@@ -662,7 +662,9 @@ class CommunityController extends Controller
                     $meetups = [];
                     foreach ($meetupIds as $item) {
                         $meetup =  CommunityMeetup::select('id', 'cover', 'title', 'organizer', 'mode', 'category', 'location', 'lat', 'lng', 'start_date', 'start_time', 'start_timestamp', 'end_date', 'end_time', 'end_timestamp', 'price', 'status')->where('status', 2)->where('id', $item)->first();
-                        $meetups[] = $meetup;
+                        if($meetup){
+                            $meetups[] = $meetup;
+                        }
                     }
                     $count  = count($meetups);
                     $meetups = collect($meetups);
