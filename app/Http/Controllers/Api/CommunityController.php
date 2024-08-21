@@ -443,18 +443,31 @@ class CommunityController extends Controller
         if ($community) {
 
             if ($type == 'courses') {
-                $courses = CommunityCourse::where('community_id', $community_id)->paginate(12);
-                foreach ($courses as $course) {
-                    $course->section_count = CommunityCourseSection::where('course_id', $course->id)->count();
-                    $duration  = CommunityCourseSectionVideo::where('course_id', $course->id)->sum('duration');
-                    $course->duration_count = $duration;
-                    $is_purchase = CommunityCoursePurchase::where('user_id', $user->uuid)->where('course_id', $course->id)->first();
-                    if ($is_purchase) {
-                        $course->is_purchase = true;
-                    } else {
-                        $course->is_purchase = false;
+                if ($sub_type == 'all') {
+                    $courses = CommunityCourse::where('community_id', $community_id)->paginate(12);
+                    foreach ($courses as $course) {
+                        $course->section_count = CommunityCourseSection::where('course_id', $course->id)->count();
+                        $duration  = CommunityCourseSectionVideo::where('course_id', $course->id)->sum('duration');
+                        $course->duration_count = $duration;
+                        $is_purchase = CommunityCoursePurchase::where('user_id', $user->uuid)->where('course_id', $course->id)->first();
+                        if ($is_purchase) {
+                            $course->is_purchase = true;
+                        } else {
+                            $course->is_purchase = false;
+                        }
                     }
                 }
+                if ($sub_type == 'purchased') {
+                    $courseIDs = CommunityCoursePurchase::where('user_id', $user->uuid)->pluck('course_id');
+                    $courses = CommunityCourse::where('community_id', $community_id)->whereIn('id', $courseIDs)->paginate(12);
+                    foreach ($courses as $course) {
+                        $course->section_count = CommunityCourseSection::where('course_id', $course->id)->count();
+                        $duration  = CommunityCourseSectionVideo::where('course_id', $course->id)->sum('duration');
+                        $course->duration_count = $duration;
+                        $course->is_purchase = true;
+                    }
+                }
+
                 return response()->json([
                     'status' => true,
                     'user' => $user,
