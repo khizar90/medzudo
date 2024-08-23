@@ -1,6 +1,6 @@
 @extends('layouts1.base')
-@section('title', 'Specialization Categories')
-@section('main', 'Specialization Management')
+@section('title', 'Care Type Categories')
+@section('main', 'Care Type Management')
 @section('link')
     <link rel="stylesheet" href="/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
 @endsection
@@ -13,12 +13,12 @@
             <div class="card">
                 <div class="card-header border-bottom">
                     <div class="d-flex justify-content-between">
-                        <h5 class="card-title mb-3">{{ $category->name }}</h5>
+                        <h5 class="card-title mb-3">Care Type List</h5>
                         <div class="">
                             <button class="btn btn-secondary add-new btn-primary" tabindex="0"
                                 aria-controls="DataTables_Table_0" type="button" data-bs-toggle="modal"
                                 data-bs-target="#addNewBus"><span><i class="ti ti-plus me-0 me-sm-1 ti-xs"></i><span
-                                        class="d-none d-sm-inline-block">Add New Specialization</span></span></button>
+                                        class="d-none d-sm-inline-block">Add New Care Type</span></span></button>
                         </div>
                     </div>
                     
@@ -29,8 +29,8 @@
                             <thead class="table-light">
                                 <tr>
 
+                                    <th>Care Type</th>
                                     <th>Specialization</th>
-                                    <th>Sub Specialization</th>
                                     <th>Action</th>
 
                                 </tr>
@@ -42,8 +42,8 @@
                                             {{ $category->name }}
                                         </td>
                                         <td>
-                                            <a href="{{ url('dashboard/category/sub/elderly-sub-specialization/'.$category->id) }}"
-                                                class="btn btn-primary">Sub Specialization</a>
+                                            <a href="{{ url('dashboard/category/sub/elderly-specialization/'.$category->id) }}"
+                                                class="btn btn-primary">Specialization</a>
                                         </td>
                                         <td class="" style="">
                                             <div class="d-flex align-items-center">
@@ -64,12 +64,12 @@
                                                         <div class="modal-header">
                                                             <div class="modal-title" id="modalCenterTitle">Are you sure you
                                                                 want to delete
-                                                                this Specialization?
+                                                                this Care Type?
                                                             </div>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <div class="body">After deleting the Specialization you will add a
-                                                                new Specialization</div>
+                                                            <div class="body">After deleting the Care Type you will add a
+                                                                new Care Type</div>
                                                         </div>
                                                         <hr class="hr">
 
@@ -90,24 +90,27 @@
                                                 </div>
                                             </div>
 
-                                            <div class="modal fade" id="edit{{ $category->id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal fade" id="edit{{ $category->id }}" tabindex="-1"
+                                                aria-hidden="true">
                                                 <div class="modal-dialog modal-dialog-centered" role="document">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title" id="modalCenterTitle">Edit Specialization
+                                                            <h5 class="modal-title" id="modalCenterTitle">Edit Care Type
                                                             </h5>
                                                         </div>
-                                                        <form action="{{ route('dashboard-category-edit' , $category->id) }}" id="addBusForm"
-                                                            method="POST">
+                                                        <form
+                                                            action="{{ route('dashboard-category-edit', $category->id) }}"
+                                                            id="addBusForm" method="POST">
                                                             @csrf
-                                                            
+
                                                             <div class="modal-body">
                                                                 <div class="row">
                                                                     <div class="col mb-3">
                                                                         <label for="nameWithTitle"
-                                                                            class="form-label">Specialization</label>
+                                                                            class="form-label">Care Type</label>
                                                                         <input type="text" id="nameWithTitle"
-                                                                            name="name" value="{{ $category->name }}" class="form-control"
+                                                                            name="name" value="{{ $category->name }}"
+                                                                            class="form-control"
                                                                             placeholder="Category Name" required />
                                                                     </div>
                                                                 </div>
@@ -118,7 +121,7 @@
                                                                     Close
                                                                 </button>
                                                                 <button type="submit" class="btn btn-primary">Edit
-                                                                    Specialization</button>
+                                                                    Care Type</button>
                                                             </div>
                                                         </form>
                                                     </div>
@@ -136,19 +139,18 @@
                     <div class="modal-dialog modal-dialog-centered" role="document">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="modalCenterTitle">Add New Specialization</h5>
+                                <h5 class="modal-title" id="modalCenterTitle">Add New Care Type</h5>
                             </div>
-                            <form action="{{ route('dashboard-category-sub-create') }}" id="addBusForm" method="POST">
+                            <form action="{{ route('dashboard-category-add') }}" id="addBusForm" method="POST">
                                 @csrf
-                                <input type="hidden" name="type" id="" value="elderly-specialization">
-                                <input type="hidden" name="parent_id" id="" value={{ $id }}>
+                                <input type="hidden" name="type" id="" value="elderly-care">
 
                                 <div class="modal-body">
                                     <div class="row">
                                         <div class="col mb-3">
-                                            <label for="nameWithTitle" class="form-label">Specialization</label>
+                                            <label for="nameWithTitle" class="form-label">Care Type</label>
                                             <input type="text" id="nameWithTitle" name="name" class="form-control"
-                                                placeholder="Specialization Name" required />
+                                                placeholder="Care Type Name" required />
                                         </div>
                                     </div>
                                 </div>
@@ -157,7 +159,7 @@
                                         data-bs-dismiss="modal">
                                         Close
                                     </button>
-                                    <button type="submit" class="btn btn-primary">Add Specialization</button>
+                                    <button type="submit" class="btn btn-primary">Add Care Type</button>
                                 </div>
                             </form>
                         </div>

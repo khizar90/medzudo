@@ -43,7 +43,7 @@ class SettingController extends Controller
         // $obj->events_category = $events;
 
         if ($user_id != null) {
-            $user = User::select('uuid','first_name','last_name','type','username','email','image','account_type','position','request_verify','verify')->where('uuid',$user_id)->first();
+            $user = User::select('uuid', 'first_name', 'last_name', 'type', 'username', 'email', 'image', 'account_type', 'position', 'request_verify', 'verify')->where('uuid', $user_id)->first();
             if ($user) {
                 $obj->user = $user;
                 $interest = UserInterest::where('user_id', $user->uuid)->first();
@@ -72,13 +72,50 @@ class SettingController extends Controller
 
     public function categories($type)
     {
-        $interest = Category::select('id', 'name', 'image')->where('type', $type)->get();
+        $categories = Category::select('id', 'name', 'image')->where('type', $type)->get();
+
+        if ($type == 'individual-profession' ||  $type == 'association-sector' ||  $type == 'society-sector' ||  $type == 'company-sector' ||  $type == 'start-sector' || $type == 'elderly-care') {
+
+            $profession = Category::select('id', 'name', 'image')->where('type', $type)->get();
+            foreach ($profession as $item) {
+                $specialization  = Category::select('id', 'name', 'image')->where('parent_id', $item->id)->get();
+                foreach ($specialization as $item1) {
+                    $sub_specialization  = Category::select('id', 'name', 'image')->where('parent_id', $item1->id)->get();
+                    $item1->sub_specialization = $sub_specialization;
+                }
+                $item->specialization = $specialization;
+            }
+            return response()->json([
+                'status' => true,
+                'action' => "Categories",
+                'data' => $profession,
+            ]);
+        }
+
+        if ($type == 'hospital-specialization' || $type == 'doctor-specialization'  || $type == 'rehabilitation-specialization' ) {
+            $specialization  = Category::select('id', 'name', 'image')->where('type', $type)->get();
+            foreach ($specialization as $item) {
+                $sub_specialization  = Category::select('id', 'name', 'image')->where('parent_id', $item->id)->get();
+                $item->sub_specialization = $sub_specialization;
+            }
+
+            $department = Category::select('id', 'name', 'image')->where('type','department')->get();
+            $training = Category::select('id', 'name', 'image')->where('type','training')->get();
+
+            return response()->json([
+                'status' => true,
+                'action' => "Categories",
+                'data' => array(
+                    'specialization' => $specialization,
+                    'department' => $department,
+                    'training' => $training,
+                ),
+            ]);
+        }
         return response()->json([
             'status' => true,
             'action' => "Categories",
-            'data' => $interest,
+            'data' => $categories,
         ]);
     }
-
-
 }

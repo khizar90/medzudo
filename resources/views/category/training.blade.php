@@ -1,6 +1,6 @@
 @extends('layouts1.base')
-@section('title', 'Position Categories')
-@section('main', 'Categories Management')
+@section('title', 'Training Abilities Categories')
+@section('main', 'Training Abilities Management')
 @section('link')
     <link rel="stylesheet" href="/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
 @endsection
@@ -13,36 +13,15 @@
             <div class="card">
                 <div class="card-header border-bottom">
                     <div class="d-flex justify-content-between">
-                        <h5 class="card-title mb-3">Categories List</h5>
+                        <h5 class="card-title mb-3">Training Abilities List</h5>
                         <div class="">
                             <button class="btn btn-secondary add-new btn-primary" tabindex="0"
                                 aria-controls="DataTables_Table_0" type="button" data-bs-toggle="modal"
                                 data-bs-target="#addNewBus"><span><i class="ti ti-plus me-0 me-sm-1 ti-xs"></i><span
-                                        class="d-none d-sm-inline-block">Add New Category</span></span></button>
+                                        class="d-none d-sm-inline-block">Add New Training Abilities</span></span></button>
                         </div>
                     </div>
-                    @if (session()->has('success'))
-                        <div class="alert alert-success alert-dismissible mt-1" role="alert">
-                            {{ session()->get('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-                    @if ($errors->any())
-                        <div class="alert alert-danger alert-dismissible mt-1" role="alert">
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-                    @if (session()->has('delete'))
-                        <div class="alert alert-danger alert-dismissible mt-1" role="alert">
-                            {{ session()->get('delete') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
+                    
                 </div>
                 <div class="card-datatable table-responsive">
                     <div id="DataTables_Table_0_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
@@ -50,7 +29,7 @@
                             <thead class="table-light">
                                 <tr>
 
-                                    <th>Category</th>
+                                    <th>Training Abilities</th>
                                     <th>Action</th>
 
                                 </tr>
@@ -80,12 +59,12 @@
                                                         <div class="modal-header">
                                                             <div class="modal-title" id="modalCenterTitle">Are you sure you
                                                                 want to delete
-                                                                this category?
+                                                                this Training Abilities?
                                                             </div>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <div class="body">After deleting the category you will add a
-                                                                new category</div>
+                                                            <div class="body">After deleting the Training Abilities you will add a
+                                                                new Training Abilities</div>
                                                         </div>
                                                         <hr class="hr">
 
@@ -110,7 +89,7 @@
                                                 <div class="modal-dialog modal-dialog-centered" role="document">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title" id="modalCenterTitle">Edit Category
+                                                            <h5 class="modal-title" id="modalCenterTitle">Edit Training Abilities
                                                             </h5>
                                                         </div>
                                                         <form action="{{ route('dashboard-category-edit' , $category->id) }}" id="addBusForm"
@@ -121,10 +100,10 @@
                                                                 <div class="row">
                                                                     <div class="col mb-3">
                                                                         <label for="nameWithTitle"
-                                                                            class="form-label">Category</label>
+                                                                            class="form-label">Training Abilities</label>
                                                                         <input type="text" id="nameWithTitle"
                                                                             name="name" value="{{ $category->name }}" class="form-control"
-                                                                            placeholder="Category Name" required />
+                                                                            placeholder="Training Abilities Name" required />
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -134,7 +113,7 @@
                                                                     Close
                                                                 </button>
                                                                 <button type="submit" class="btn btn-primary">Edit
-                                                                    Category</button>
+                                                                    Training Abilities</button>
                                                             </div>
                                                         </form>
                                                     </div>
@@ -152,18 +131,18 @@
                     <div class="modal-dialog modal-dialog-centered" role="document">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="modalCenterTitle">Add New Category</h5>
+                                <h5 class="modal-title" id="modalCenterTitle">Add New Training Abilities</h5>
                             </div>
                             <form action="{{ route('dashboard-category-add') }}" id="addBusForm" method="POST">
                                 @csrf
-                                <input type="hidden" name="type" id="" value="position">
+                                <input type="hidden" name="type" id="" value="training">
 
                                 <div class="modal-body">
                                     <div class="row">
                                         <div class="col mb-3">
-                                            <label for="nameWithTitle" class="form-label">Category</label>
+                                            <label for="nameWithTitle" class="form-label">Training Abilities</label>
                                             <input type="text" id="nameWithTitle" name="name" class="form-control"
-                                                placeholder="Category Name" required />
+                                                placeholder="Training Abilities Name" required />
                                         </div>
                                     </div>
                                 </div>
@@ -172,7 +151,7 @@
                                         data-bs-dismiss="modal">
                                         Close
                                     </button>
-                                    <button type="submit" class="btn btn-primary">Add Category</button>
+                                    <button type="submit" class="btn btn-primary">Add Training</button>
                                 </div>
                             </form>
                         </div>

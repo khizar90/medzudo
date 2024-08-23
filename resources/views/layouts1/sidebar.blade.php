@@ -54,12 +54,7 @@
 
             </a>
         </li>
-        <li class="menu-item {{ Request::url() == route('dashboard-category-', 'position') ? 'active' : '' }}">
-            <a href="{{ route('dashboard-category-', 'position') }}" class="menu-link">
-                <i class="menu-icon tf-icons ti ti-circle"></i>
-                <div data-i18n="Contact Us Categories">Position Categories</div>
-            </a>
-        </li>
+        
         <li class="menu-item {{ Request::url() == route('dashboard-category-', 'individual-profession') ? 'active' : '' }} ||   {{ Str::contains(Request::url(), 'dashboard/category/sub/individual-specialization') ? 'active' : '' }} ||   {{ Str::contains(Request::url(), 'dashboard/category/sub/individual-sub-specialization') ? 'active' : '' }}">
             <a href="{{ route('dashboard-category-', 'individual-profession') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-circle"></i>
@@ -95,19 +90,31 @@
         <li class="menu-item {{ Request::url() == route('dashboard-category-', 'doctor-specialization') ? 'active' : '' }} ||   {{ Str::contains(Request::url(), 'dashboard/category/sub/doctor-specialization') ? 'active' : '' }} ||   {{ Str::contains(Request::url(), 'dashboard/category/sub/doctor-sub-specialization') ? 'active' : '' }}">
             <a href="{{ route('dashboard-category-', 'doctor-specialization') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-circle"></i>
-                <div data-i18n="Contact Us Categories">Doctor Specialization</div>
+                <div data-i18n="Contact Us Categories">Doctor Offices</div>
             </a>
         </li>
-        <li class="menu-item {{ Request::url() == route('dashboard-category-', 'elderly-specialization') ? 'active' : '' }} ||   {{ Str::contains(Request::url(), 'dashboard/category/sub/elderly-specialization') ? 'active' : '' }} ||   {{ Str::contains(Request::url(), 'dashboard/category/sub/elderly-sub-specialization') ? 'active' : '' }}">
-            <a href="{{ route('dashboard-category-', 'elderly-specialization') }}" class="menu-link">
+        <li class="menu-item {{ Request::url() == route('dashboard-category-', 'elderly-care') ? 'active' : '' }} ||   {{ Str::contains(Request::url(), 'dashboard/category/sub/elderly-specialization') ? 'active' : '' }} ||   {{ Str::contains(Request::url(), 'dashboard/category/sub/elderly-sub-specialization') ? 'active' : '' }}">
+            <a href="{{ route('dashboard-category-', 'elderly-care') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-circle"></i>
-                <div data-i18n="Contact Us Categories">Elderly Specialization</div>
+                <div data-i18n="Contact Us Categories">Elderly Care</div>
             </a>
         </li>
         <li class="menu-item {{ Request::url() == route('dashboard-category-', 'rehabilitation-specialization') ? 'active' : '' }} ||   {{ Str::contains(Request::url(), 'dashboard/category/sub/rehabilitation-specialization') ? 'active' : '' }} ||   {{ Str::contains(Request::url(), 'dashboard/category/sub/rehabilitation-sub-specialization') ? 'active' : '' }}">
             <a href="{{ route('dashboard-category-', 'rehabilitation-specialization') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-circle"></i>
                 <div data-i18n="Contact Us Categories">Rehabilitation Specialization</div>
+            </a>
+        </li>
+        <li class="menu-item {{ Request::url() == route('dashboard-category-', 'department') ? 'active' : '' }}">
+            <a href="{{ route('dashboard-category-', 'department') }}" class="menu-link">
+                <i class="menu-icon tf-icons ti ti-circle"></i>
+                <div data-i18n="Contact Us Categories">Department</div>
+            </a>
+        </li>
+        <li class="menu-item {{ Request::url() == route('dashboard-category-', 'training') ? 'active' : '' }}">
+            <a href="{{ route('dashboard-category-', 'training') }}" class="menu-link">
+                <i class="menu-icon tf-icons ti ti-circle"></i>
+                <div data-i18n="Contact Us Categories">Training Abilities</div>
             </a>
         </li>
         <li class="menu-item {{ Request::url() == route('dashboard-report-', 'facility') ? 'active' : '' }}">

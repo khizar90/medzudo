@@ -35,8 +35,11 @@ class CategoryController extends Controller
         if ($type == 'report') {
             return view('category.report', compact('categories'));
         }
-        if ($type == 'position') {
-            return view('category.position', compact('categories'));
+        if ($type == 'department') {
+            return view('category.department', compact('categories'));
+        }
+        if ($type == 'training') {
+            return view('category.training', compact('categories'));
         }
         if ($type == 'individual-profession') {
             return view('category.profession', compact('categories'));
@@ -47,8 +50,8 @@ class CategoryController extends Controller
         if ($type == 'doctor-specialization') {
             return view('category.doctor-specialization', compact('categories'));
         }
-        if ($type == 'elderly-specialization') {
-            return view('category.elderly-specialization', compact('categories'));
+        if ($type == 'elderly-care') {
+            return view('category.elderly-care', compact('categories'));
         }
         if ($type == 'rehabilitation-specialization') {
             return view('category.rehabilitation-specialization', compact('categories'));
@@ -135,6 +138,10 @@ class CategoryController extends Controller
         if ($type == 'doctor-sub-specialization') {
             $category = Category::find($id);
             return view('category.doctor-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'elderly-specialization') {
+            $category = Category::find($id);
+            return view('category.elderly-specialization', compact('categories', 'type', 'id', 'category'));
         }
         if ($type == 'elderly-sub-specialization') {
             $category = Category::find($id);

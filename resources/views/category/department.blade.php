@@ -1,6 +1,6 @@
 @extends('layouts1.base')
-@section('title', 'Specialization Categories')
-@section('main', 'Specialization Management')
+@section('title', 'Department Categories')
+@section('main', 'Department Management')
 @section('link')
     <link rel="stylesheet" href="/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
 @endsection
@@ -13,15 +13,36 @@
             <div class="card">
                 <div class="card-header border-bottom">
                     <div class="d-flex justify-content-between">
-                        <h5 class="card-title mb-3">{{ $category->name }}</h5>
+                        <h5 class="card-title mb-3">Department List</h5>
                         <div class="">
                             <button class="btn btn-secondary add-new btn-primary" tabindex="0"
                                 aria-controls="DataTables_Table_0" type="button" data-bs-toggle="modal"
                                 data-bs-target="#addNewBus"><span><i class="ti ti-plus me-0 me-sm-1 ti-xs"></i><span
-                                        class="d-none d-sm-inline-block">Add New Specialization</span></span></button>
+                                        class="d-none d-sm-inline-block">Add New Department</span></span></button>
                         </div>
                     </div>
-                    
+                    @if (session()->has('success'))
+                        <div class="alert alert-success alert-dismissible mt-1" role="alert">
+                            {{ session()->get('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+                    @if ($errors->any())
+                        <div class="alert alert-danger alert-dismissible mt-1" role="alert">
+                            <ul>
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+                    @if (session()->has('delete'))
+                        <div class="alert alert-danger alert-dismissible mt-1" role="alert">
+                            {{ session()->get('delete') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
                 </div>
                 <div class="card-datatable table-responsive">
                     <div id="DataTables_Table_0_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
@@ -29,8 +50,7 @@
                             <thead class="table-light">
                                 <tr>
 
-                                    <th>Specialization</th>
-                                    <th>Sub Specialization</th>
+                                    <th>Department</th>
                                     <th>Action</th>
 
                                 </tr>
@@ -40,10 +60,6 @@
                                     <tr class="odd">
                                         <td class="">
                                             {{ $category->name }}
-                                        </td>
-                                        <td>
-                                            <a href="{{ url('dashboard/category/sub/elderly-sub-specialization/'.$category->id) }}"
-                                                class="btn btn-primary">Sub Specialization</a>
                                         </td>
                                         <td class="" style="">
                                             <div class="d-flex align-items-center">
@@ -64,12 +80,12 @@
                                                         <div class="modal-header">
                                                             <div class="modal-title" id="modalCenterTitle">Are you sure you
                                                                 want to delete
-                                                                this Specialization?
+                                                                this department?
                                                             </div>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <div class="body">After deleting the Specialization you will add a
-                                                                new Specialization</div>
+                                                            <div class="body">After deleting the department you will add a
+                                                                new department</div>
                                                         </div>
                                                         <hr class="hr">
 
@@ -94,7 +110,7 @@
                                                 <div class="modal-dialog modal-dialog-centered" role="document">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title" id="modalCenterTitle">Edit Specialization
+                                                            <h5 class="modal-title" id="modalCenterTitle">Edit Department
                                                             </h5>
                                                         </div>
                                                         <form action="{{ route('dashboard-category-edit' , $category->id) }}" id="addBusForm"
@@ -105,10 +121,10 @@
                                                                 <div class="row">
                                                                     <div class="col mb-3">
                                                                         <label for="nameWithTitle"
-                                                                            class="form-label">Specialization</label>
+                                                                            class="form-label">Department</label>
                                                                         <input type="text" id="nameWithTitle"
                                                                             name="name" value="{{ $category->name }}" class="form-control"
-                                                                            placeholder="Category Name" required />
+                                                                            placeholder="Department Name" required />
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -118,7 +134,7 @@
                                                                     Close
                                                                 </button>
                                                                 <button type="submit" class="btn btn-primary">Edit
-                                                                    Specialization</button>
+                                                                    department</button>
                                                             </div>
                                                         </form>
                                                     </div>
@@ -136,19 +152,18 @@
                     <div class="modal-dialog modal-dialog-centered" role="document">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="modalCenterTitle">Add New Specialization</h5>
+                                <h5 class="modal-title" id="modalCenterTitle">Add New Department</h5>
                             </div>
-                            <form action="{{ route('dashboard-category-sub-create') }}" id="addBusForm" method="POST">
+                            <form action="{{ route('dashboard-category-add') }}" id="addBusForm" method="POST">
                                 @csrf
-                                <input type="hidden" name="type" id="" value="elderly-specialization">
-                                <input type="hidden" name="parent_id" id="" value={{ $id }}>
+                                <input type="hidden" name="type" id="" value="department">
 
                                 <div class="modal-body">
                                     <div class="row">
                                         <div class="col mb-3">
-                                            <label for="nameWithTitle" class="form-label">Specialization</label>
+                                            <label for="nameWithTitle" class="form-label">Department</label>
                                             <input type="text" id="nameWithTitle" name="name" class="form-control"
-                                                placeholder="Specialization Name" required />
+                                                placeholder="Department Name" required />
                                         </div>
                                     </div>
                                 </div>
@@ -157,7 +172,7 @@
                                         data-bs-dismiss="modal">
                                         Close
                                     </button>
-                                    <button type="submit" class="btn btn-primary">Add Specialization</button>
+                                    <button type="submit" class="btn btn-primary">Add Department</button>
                                 </div>
                             </form>
                         </div>
