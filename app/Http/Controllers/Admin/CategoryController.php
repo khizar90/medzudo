@@ -74,6 +74,9 @@ class CategoryController extends Controller
         $category = new Category();
         $category->name = $request->name;
         $category->type = $request->type;
+        if($request->has('status')){
+            $category->status = $request->status;
+        }
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             // $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/profile', $file);
@@ -108,6 +111,9 @@ class CategoryController extends Controller
             if ($file->move('uploads/admin/categories/', $filename))
                 $path =  '/uploads/admin/categories/' . $filename;
             $category->image = $path;
+        }
+        if($request->has('status')){
+            $category->status = $request->status;
         }
         $category->save();
         return redirect()->back();

@@ -21,7 +21,7 @@
                                         class="d-none d-sm-inline-block">Add New Profession</span></span></button>
                         </div>
                     </div>
-                    
+
                 </div>
                 <div class="card-datatable table-responsive">
                     <div id="DataTables_Table_0_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
@@ -42,7 +42,7 @@
                                             {{ $category->name }}
                                         </td>
                                         <td>
-                                            <a href="{{ url('dashboard/category/sub/individual-specialization/'.$category->id) }}"
+                                            <a href="{{ url('dashboard/category/sub/individual-specialization/' . $category->id) }}"
                                                 class="btn btn-primary">Specialization</a>
                                         </td>
                                         <td class="" style="">
@@ -98,8 +98,7 @@
                                                             <h5 class="modal-title" id="modalCenterTitle">Edit Profession
                                                             </h5>
                                                         </div>
-                                                        <form
-                                                            action="{{ route('dashboard-category-edit', $category->id) }}"
+                                                        <form action="{{ route('dashboard-category-edit', $category->id) }}"
                                                             id="addBusForm" method="POST">
                                                             @csrf
 
@@ -110,8 +109,28 @@
                                                                             class="form-label">Profession</label>
                                                                         <input type="text" id="nameWithTitle"
                                                                             name="name" value="{{ $category->name }}"
-                                                                            class="form-control"
-                                                                            placeholder="Category Name" required />
+                                                                            class="form-control" placeholder="Category Name"
+                                                                            required />
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-6">
+                                                                        <label for="nameWithTitle" class="form-label">
+                                                                            Status</label>
+
+                                                                        <div class="d-flex mt-2">
+                                                                            <label class="switch switch-primary">
+                                                                                <input type="checkbox" name="status" {{ $category->status == 1 ? 'checked' : '' }}
+                                                                                    value="1"
+                                                                                    class="switch-input first-switch">
+                                                                                <span class="switch-toggle-slider">
+                                                                                    <span class="switch-off">
+                                                                                        <i class="ti ti-x"></i>
+                                                                                    </span>
+                                                                                </span>
+                                                                            </label>
+                                                                        </div>
+
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -151,6 +170,24 @@
                                             <label for="nameWithTitle" class="form-label">Profession</label>
                                             <input type="text" id="nameWithTitle" name="name" class="form-control"
                                                 placeholder="Profession Name" required />
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <label for="nameWithTitle" class="form-label"> Status</label>
+
+                                            <div class="d-flex mt-2">
+                                                <label class="switch switch-primary">
+                                                    <input type="checkbox" name="status" value="1"
+                                                        class="switch-input first-switch">
+                                                    <span class="switch-toggle-slider">
+                                                        <span class="switch-off">
+                                                            <i class="ti ti-x"></i>
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                            </div>
+
                                         </div>
                                     </div>
                                 </div>
