@@ -75,6 +75,10 @@ Route::prefix('dashboard')->middleware(['auth'])->name('dashboard-')->group(func
         Route::post('/add', [CategoryController::class, 'add'])->name('add');
         Route::post('/edit/{id}', [CategoryController::class, 'edit'])->name('edit');
         Route::get('/delete/{id}', [CategoryController::class, 'delete'])->name('delete');
+        Route::prefix('sub')->name('sub-')->group(function () {
+            Route::get('/{type}/{id}', [CategoryController::class, 'subList']);
+            Route::post('/create', [CategoryController::class, 'subCreate'])->name('create');
+        });
     });
 
     Route::get('send-notification', [AdminController::class, 'createSendNotification'])->name('send-notification');

@@ -38,6 +38,33 @@ class CategoryController extends Controller
         if ($type == 'position') {
             return view('category.position', compact('categories'));
         }
+        if ($type == 'individual-profession') {
+            return view('category.profession', compact('categories'));
+        }
+        if ($type == 'hospital-specialization') {
+            return view('category.hospital-specialization', compact('categories'));
+        }
+        if ($type == 'doctor-specialization') {
+            return view('category.doctor-specialization', compact('categories'));
+        }
+        if ($type == 'elderly-specialization') {
+            return view('category.elderly-specialization', compact('categories'));
+        }
+        if ($type == 'rehabilitation-specialization') {
+            return view('category.rehabilitation-specialization', compact('categories'));
+        }
+        if ($type == 'association-sector') {
+            return view('category.association-sector', compact('categories'));
+        }
+        if ($type == 'society-sector') {
+            return view('category.society-sector', compact('categories'));
+        }
+        if ($type == 'company-sector') {
+            return view('category.company-sector', compact('categories'));
+        }
+        if ($type == 'start-sector') {
+            return view('category.start-sector', compact('categories'));
+        }
     }
     public function add(Request $request)
     {
@@ -87,6 +114,76 @@ class CategoryController extends Controller
     {
         $category = Category::find($id);
         $category->delete();
+        return redirect()->back();
+    }
+
+    public function subList($type, $id)
+    {
+        $categories = Category::where('type', $type)->where('parent_id', $id)->get();
+        if ($type == 'individual-specialization') {
+            $category = Category::find($id);
+            return view('category.individual-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'individual-sub-specialization') {
+            $category = Category::find($id);
+            return view('category.individual-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'hospital-sub-specialization') {
+            $category = Category::find($id);
+            return view('category.hospital-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'doctor-sub-specialization') {
+            $category = Category::find($id);
+            return view('category.doctor-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'elderly-sub-specialization') {
+            $category = Category::find($id);
+            return view('category.elderly-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'rehabilitation-sub-specialization') {
+            $category = Category::find($id);
+            return view('category.rehabilitation-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'association-sub-specialization') {
+            $category = Category::find($id);
+            return view('category.association-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'association-specialization') {
+            $category = Category::find($id);
+            return view('category.association-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'society-specialization') {
+            $category = Category::find($id);
+            return view('category.society-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'society-sub-specialization') {
+            $category = Category::find($id);
+            return view('category.society-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'company-specialization') {
+            $category = Category::find($id);
+            return view('category.company-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'company-sub-specialization') {
+            $category = Category::find($id);
+            return view('category.company-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'start-specialization') {
+            $category = Category::find($id);
+            return view('category.start-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'start-sub-specialization') {
+            $category = Category::find($id);
+            return view('category.start-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+    }
+    public function subCreate(Request $request)
+    {
+        $create = new Category();
+        $create->name = $request->name;
+        $create->type = $request->type;
+        $create->parent_id = $request->parent_id;
+        $create->save();
         return redirect()->back();
     }
 }
