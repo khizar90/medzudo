@@ -236,7 +236,7 @@
   justify-content: flex-end;
 }
 .light-style .app-chat .app-chat-history .chat-history-body .chat-history .chat-message.chat-message-right .chat-message-text {
-  color: #000000;
+  color: #fff;
 }
 .light-style .app-chat .app-chat-sidebar-right {
   background-color: #fff;

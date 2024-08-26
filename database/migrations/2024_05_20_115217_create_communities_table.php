@@ -25,7 +25,6 @@ return new class extends Migration
             $table->string('type');
             $table->string('mode');
             $table->string('price');
-            $table->string('price');
             $table->longText('description');
             $table->string('website_link')->default('');
             $table->string('linkedin_link')->default('');

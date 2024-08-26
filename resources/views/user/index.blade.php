@@ -92,7 +92,8 @@
                                 <tr>
 
                                     <th>User</th>
-                                    <th>type</th>
+                                    <th>Sector</th>
+                                    <th>Positions</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -129,7 +130,8 @@
                                             </div>
                                         </td>
 
-                                        <td>{{ $user->account_type }}</td>
+                                        <td>{{ $user->sector }}</td>
+                                        <td>{{ $user->position }}</td>
 
 
                                         <td class="" style="">

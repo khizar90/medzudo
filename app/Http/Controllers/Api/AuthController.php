@@ -89,7 +89,7 @@ class AuthController extends Controller
         $username = strtolower($request->first_name . $last_name . time());
         $create->username = $username;
         $create->email = $request->email;
-        $create->position = $request->position ?: '';
+        $create->sector = $request->sector ?: '';
         $create->account_type = $request->account_type;
         $create->password = Hash::make($request->password);
 
@@ -125,7 +125,7 @@ class AuthController extends Controller
         $userdevice->save();
 
 
-        $newuser  = User::select('uuid', 'first_name', 'last_name', 'type', 'username', 'email', 'image', 'account_type', 'position', 'request_verify', 'verify')->where('uuid', $create->uuid)->first();
+        $newuser  = User::where('uuid', $create->uuid)->first();
 
         $interest = UserInterest::where('user_id', $newuser->uuid)->first();
         if ($interest) {
@@ -144,7 +144,7 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request)
     {
-        $user = User::select('uuid', 'first_name', 'last_name', 'type', 'username', 'email', 'image', 'account_type', 'position', 'request_verify', 'verify', 'password')->where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
         $interest = UserInterest::where('user_id', $user->uuid)->first();
         if ($interest) {
             $user->interest_add = true;
@@ -290,7 +290,7 @@ class AuthController extends Controller
     {
         $user = User::find($request->user_id);
         UserDevice::where('user_id', $request->user_id)->where('device_id', $request->device_id)->delete();
-        // $user->tokens()->delete();
+        $request->user()->currentAccessToken()->delete();
         return response()->json([
             'status' => true,
             'action' => 'User logged out'
@@ -1201,6 +1201,44 @@ class AuthController extends Controller
             'status' => true,
             'action' => 'Contact Edit',
             'data' => $newData
+        ]);
+    }
+
+    public function setProfile(Request $request)
+    {
+        $user = User::find($request->user()->uuid);
+        $user->professionId = $request->professionId ?: '';
+        $user->professionName = $request->professionName ?: '';
+        $user->specializationId = $request->specializationId ?: '';
+        $user->specializationName = $request->specializationName ?: '';
+        $user->subSpecializationId = $request->subSpecializationId ?: '';
+        $user->subSpecializationName = $request->subSpecializationName ?: '';
+        $user->position = $request->position ?: '';
+        $user->experience = $request->experience ?: '';
+        $user->age = $request->age ?: '';
+        $user->gender = $request->gender ?: '';
+        $user->location = $request->location ?: '';
+        $user->lat = $request->lat ?: '';
+        $user->lng = $request->lng ?: '';
+        $user->no_of_employe = $request->no_of_employe ?: '';
+        $user->departmentId = $request->departmentId ?: '';
+        $user->departmentName = $request->departmentName ?: '';
+        $user->trainingId = $request->trainingId ?: '';
+        $user->trainingName = $request->trainingName ?: '';
+
+        if ($request->has('image')) {
+            $file = $request->file('image');
+            $path = Storage::disk('local')->put('user/' . $user->uuid . '/profile', $file);
+            $user->image  = '/uploads/' . $path;
+        }
+        $user->website_link = $request->website_link ?: '';
+        $user->about = $request->about ?: '';
+
+        $user->save();
+        return response()->json([
+            'status' => true,
+            'action' => 'Profile Set',
+            'data' => $user
         ]);
     }
 }

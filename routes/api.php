@@ -44,6 +44,9 @@ Route::post('user/logout', [AuthController::class, 'logout']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('edit/profile', [AuthController::class, 'editProfile']);
+    Route::prefix('user/')->group(function () {
+        Route::post('set/profile', [AuthController::class, 'setProfile']);
+    });
 });
 Route::get('blocklist/{id}', [AuthController::class, 'blockList']);
 Route::post('change/password', [AuthController::class, 'changePassword']);

@@ -319,6 +319,6 @@ textarea::-webkit-scrollbar-thumb {
     height: 110px; /* Set the height of the container */
 }
 .app-brand-text img{
-    width: 50%;
+    width: 75%;
     height: auto;
 }
