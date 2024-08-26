@@ -44,8 +44,8 @@ class CategoryController extends Controller
         if ($type == 'individual-profession') {
             return view('category.profession', compact('categories'));
         }
-        if ($type == 'hospital-specialization') {
-            return view('category.hospital-specialization', compact('categories'));
+        if ($type == 'hospital-department') {
+            return view('category.hospital-department', compact('categories'));
         }
         if ($type == 'doctor-specialization') {
             return view('category.doctor-specialization', compact('categories'));
@@ -74,7 +74,7 @@ class CategoryController extends Controller
         $category = new Category();
         $category->name = $request->name;
         $category->type = $request->type;
-        if($request->has('status')){
+        if ($request->has('status')) {
             $category->status = $request->status;
         }
         if ($request->hasFile('image')) {
@@ -112,7 +112,7 @@ class CategoryController extends Controller
                 $path =  '/uploads/admin/categories/' . $filename;
             $category->image = $path;
         }
-        if($request->has('status')){
+        if ($request->has('status')) {
             $category->status = $request->status;
         }
         $category->save();
@@ -136,6 +136,10 @@ class CategoryController extends Controller
         if ($type == 'individual-sub-specialization') {
             $category = Category::find($id);
             return view('category.individual-sub-specialization', compact('categories', 'type', 'id', 'category'));
+        }
+        if ($type == 'hospital-specialization') {
+            $category = Category::find($id);
+            return view('category.hospital-specialization', compact('categories', 'type', 'id', 'category'));
         }
         if ($type == 'hospital-sub-specialization') {
             $category = Category::find($id);
@@ -189,6 +193,7 @@ class CategoryController extends Controller
             $category = Category::find($id);
             return view('category.start-sub-specialization', compact('categories', 'type', 'id', 'category'));
         }
+       
     }
     public function subCreate(Request $request)
     {

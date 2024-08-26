@@ -74,7 +74,7 @@ class SettingController extends Controller
     {
         $categories = Category::select('id', 'name', 'image')->where('type', $type)->get();
 
-        if ($type == 'individual-profession' ||  $type == 'association-sector' ||  $type == 'society-sector' ||  $type == 'company-sector' ||  $type == 'start-sector' || $type == 'elderly-care') {
+        if ($type == 'individual-profession' ||  $type == 'association-sector' ||  $type == 'society-sector' ||  $type == 'company-sector' ||  $type == 'start-sector' || $type == 'elderly-care'|| $type == 'hospital-department') {
 
             $profession = Category::select('id', 'name', 'image')->where('type', $type)->get();
             foreach ($profession as $item) {
