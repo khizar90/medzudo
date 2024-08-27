@@ -93,20 +93,6 @@ class AuthController extends Controller
         $create->account_type = $request->account_type;
         $create->password = Hash::make($request->password);
 
-
-        if ($request->hasFile('request_image')) {
-            $file = $request->file('request_image');
-            // $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/profile', $file);
-            // $path = Storage::disk('s3')->url($path);
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $request->user_id . '/request_image/', $filename))
-                $path = '/uploads/user/' . $request->user_id . '/request_image/' . $filename;
-            $create->request_image = $path;
-        }
-
-
         $check = User::where('username', $username)->first();
         if ($check) {
             return response()->json([
