@@ -39,6 +39,7 @@ Route::prefix('dashboard')->middleware(['auth'])->name('dashboard-')->group(func
     Route::get('users/export', [AdminController::class, 'exportCSV'])->name('users-export-csv');
     Route::get('verify-users', [AdminController::class, 'verifyUsers'])->name('verify-users');
     Route::get('get-verify/{type}/{id}', [AdminController::class, 'getVerify'])->name('get-verify');
+    Route::get('user/delete/{id}', [AdminController::class, 'deleteUser'])->name('delete-user');
 
     Route::get('user/verify/organization', [AdminController::class, 'organizationVerify'])->name('user-organization-verify');
 

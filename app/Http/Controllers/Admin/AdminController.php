@@ -75,6 +75,14 @@ class AdminController extends Controller
         return response()->download(storage_path('users.csv'))->deleteFileAfterSend(true);
     }
 
+    public function deleteUser($user_id){
+        $user = User::find($user_id);
+        if($user){
+            $user->delete();
+        }
+        return redirect()->back();
+    }
+
     public function verifyUsers(Request $request)
     {
 

@@ -69,7 +69,7 @@
                                 </div>
                                 <div class="second">
                                     <a class="btn text-center"
-                                        href="{{ url('admin/user/delete', $user->uuid) }}">Delete</a>
+                                        href="{{ url('dashboard/user/delete', $user->uuid) }}">Delete</a>
                                 </div>
                             </div>
                         </div>
