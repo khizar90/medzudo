@@ -199,7 +199,7 @@
                         <button class="btn btn-primary d-grid w-100" id="signinButton" onclick="showLoader()">
                             <span id="btntext"> Sign in</span>
                             <span class="align-middle mt-1" id="loader" role="status" style="display: none;">
-                                <span class="spinner-border text-dark" role="status">
+                                <span class="spinner-border" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </span>
                             </span>
