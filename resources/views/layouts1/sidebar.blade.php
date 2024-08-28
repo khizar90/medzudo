@@ -158,14 +158,14 @@
                 <div data-i18n="Contact Us Categories">Start Up Sector</div>
             </a>
         </li>
-
+{{-- 
         <li class="menu-item {{ Request::url() == route('dashboard-user-organization-verify') ? 'active' : '' }}">
             <a href="{{ route('dashboard-user-organization-verify') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-circle"></i>
                 <div data-i18n="User">Verifications Requests</div>
 
             </a>
-        </li>
+        </li> --}}
         <li class="menu-item {{ Request::url() == route('dashboard-report-', 'organization') ? 'active' : '' }}">
             <a href="{{ route('dashboard-report-', 'organization') }}" class="menu-link">
                 <i class="menu-icon tf-icons ti ti-circle"></i>
