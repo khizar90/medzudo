@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Post extends Model
 {
     use HasFactory;
+    protected $hidden = [
+       
+        'updated_at',
+        'created_at'
+    ];
 }
