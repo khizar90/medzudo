@@ -868,6 +868,7 @@ class CommunityController extends Controller
     {
         $find = Community::find($id);
         if ($find) {
+            CommunityPost::where('community_id',$id)->delete();
             $find->delete();
             return response()->json([
                 'status' => true,

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\ForumController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\TicketController;
@@ -46,6 +47,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('user/')->group(function () {
         Route::post('set/profile', [AuthController::class, 'setProfile']);
         Route::post('logout', [AuthController::class, 'logout']);
+
+        Route::prefix('post')->group(function () {
+            Route::post('create', [PostController::class, 'create']);
+            Route::get('repost/{id}', [PostController::class, 'repost']);
+            Route::get('detail/{post_id}', [PostController::class, 'detail']);
+            Route::get('like/{post_id}', [PostController::class, 'like']);
+            Route::get('like/list/{post_id}', [PostController::class, 'likeList']);
+            Route::get('save/{post_id}', [PostController::class, 'save']);
+            Route::get('delete/{post_id}', [PostController::class, 'delete']);
+            Route::post('comment', [PostController::class, 'comment']);
+            Route::get('comment/delete/{comment_id}', [PostController::class, 'deleteComment']);
+            Route::get('comment/list/{post_id}', [PostController::class, 'commentList']);
+        });
     });
 });
 Route::get('blocklist/{id}', [AuthController::class, 'blockList']);
