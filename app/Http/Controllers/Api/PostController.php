@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\User\CreatePostRequest;
 use App\Http\Requests\Api\User\PostCommentRequest;
+use App\Models\Follow;
 use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostLike;
@@ -14,6 +15,7 @@ use FFMpeg\Coordinate\TimeCode;
 use FFMpeg\FFMpeg;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use stdClass;
 
 class PostController extends Controller
 {
@@ -25,6 +27,62 @@ class PostController extends Controller
         $thumbnailPath = '/uploads/thumbnails/' . $thumbnailFileName;
         $video->frame(TimeCode::fromSeconds(1))->save(public_path($thumbnailPath));
         return $thumbnailPath;
+    }
+
+    public function home(Request $request)
+    {
+        $user = User::find($request->user()->uuid);
+        $posts = Post::latest()->paginate(12);
+        $followIds = Follow::where('user_id', $user->uuid)->pluck('follow_id');
+        $suggestions = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereNotIn('uuid', $followIds)->where('uuid', '!=', $user->uuid)->limit(12)->latest()->get();
+        foreach ($suggestions as $follow) {
+            $follow->is_follow = false;
+        }
+        foreach ($posts as $post) {
+            $postby = User::where('uuid', $post->user_id)->select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->first();
+
+            $repostBy = new stdClass();
+            if ($post->parent_id != 0) {
+                $parentPost = Post::find($post->parent_id);
+                $repostBy = User::where('uuid', $post->user_id)->select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->first();
+                $postby = User::where('uuid', $parentPost->user_id)->select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->first();
+            }
+
+            $comment_count = PostComment::where('post_id', $post->id)->count();
+            $like_count = PostLike::where('post_id', $post->id)->count();
+            $likestatus = PostLike::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
+            $saved = PostSave::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
+            $post->media = empty($post->media) ? [] : explode(',', $post->media);
+            $likes = PostLike::where('post_id', $post->id)->latest()->limit(3)->pluck('user_id');
+            $like_users = User::select('uuid', 'first_name', 'last_name', 'image')->whereIn('uuid', $likes)->get();
+            if ($likestatus) {
+                $post->is_liked = true;
+            } else {
+                $post->is_liked = false;
+            }
+
+            if ($saved) {
+                $post->is_saved = true;
+            } else {
+                $post->is_saved = false;
+            }
+
+            $post->comment_count = $comment_count;
+            $post->like_count = $like_count;
+            $post->like_users = $like_users;
+            $post->user = $postby;
+            $post->repostBy = $repostBy;
+        }
+
+        return response()->json([
+            'status' => true,
+            // 'user' => $user,
+            'action' =>  'Feed',
+            'data' => array(
+                'post' => $posts,
+                'suggestions' => $suggestions
+            )
+        ]);
     }
 
     public function create(CreatePostRequest $request)
@@ -68,7 +126,7 @@ class PostController extends Controller
             $create->media = $mediaString;
             $create->size = $size;
         }
-        $create->caption = $request->caption ? : '';
+        $create->caption = $request->caption ?: '';
         $create->user_id = $user->uuid;
         $create->type = $request->type;
         $create->time = time();
@@ -83,10 +141,11 @@ class PostController extends Controller
         ]);
     }
 
-    public function repost(Request $request,$post_id){
+    public function repost(Request $request, $post_id)
+    {
         $user = User::find($request->user()->uuid);
         $post = Post::find($post_id);
-        if($post){
+        if ($post) {
             $create = new Post();
             $create->user_id = $user->uuid;
             $create->parent_id = $post->id;
@@ -112,7 +171,7 @@ class PostController extends Controller
     {
         $post = Post::find($post_id);
         if ($post) {
-            Post::where('parent_id',$post->id)->delete();
+            Post::where('parent_id', $post->id)->delete();
             $post->delete();
             return response()->json([
                 'status' => true,
@@ -220,7 +279,6 @@ class PostController extends Controller
     {
         $post = PostComment::find($comment_id);
         if ($post) {
-            PostComment::where('parent_id',$post->id)->delete();
             $post->delete();
             return response()->json([
                 'status' => true,
@@ -233,9 +291,9 @@ class PostController extends Controller
             ]);
         }
     }
-   
 
-    
+
+
     public function commentList(Request $request, $post_id)
     {
         $user = User::find($request->user()->uuid);
@@ -247,7 +305,7 @@ class PostController extends Controller
 
             foreach ($comments as $comment) {
                 $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $comment->user_id)->first();
-                $comment->user = $user;                
+                $comment->user = $user;
             }
             $total = PostComment::where('post_id', $post_id)->count();
             return response()->json([
@@ -262,7 +320,7 @@ class PostController extends Controller
             'action' =>  "No post found",
         ]);
     }
-   
+
 
     public function likeList(Request $request, $post_id)
     {
@@ -296,7 +354,7 @@ class PostController extends Controller
             $saved = PostSave::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
             $post->media = empty($post->media) ? [] : explode(',', $post->media);
             $likes = PostLike::where('post_id', $post->id)->latest()->limit(3)->pluck('user_id');
-            $like_users = User::select('uuid', 'first_name', 'last_name')->whereIn('uuid', $likes)->where('uuid', '!=', $user->uuid)->get();
+            $like_users = User::select('uuid', 'first_name', 'last_name', 'image')->whereIn('uuid', $likes)->get();
             if ($likestatus) {
                 $post->is_liked = true;
             } else {
@@ -308,7 +366,7 @@ class PostController extends Controller
             } else {
                 $post->is_saved = false;
             }
-           
+
             $post->comment_count = $comment_count;
             $post->like_count = $like_count;
             $post->like_users = $like_users;
@@ -317,7 +375,7 @@ class PostController extends Controller
 
             return response()->json([
                 'status' => true,
-                'action' =>  'Feed',
+                'action' =>  'Detail Post',
                 'data' => $post
             ]);
         } else {

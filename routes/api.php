@@ -49,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
 
         Route::prefix('post')->group(function () {
+            Route::get('home', [PostController::class, 'home']);
             Route::post('create', [PostController::class, 'create']);
             Route::get('repost/{id}', [PostController::class, 'repost']);
             Route::get('detail/{post_id}', [PostController::class, 'detail']);

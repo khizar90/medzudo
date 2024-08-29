@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api\User;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class PostCommentRequest extends FormRequest
 {
@@ -11,7 +13,7 @@ class PostCommentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +24,17 @@ class PostCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'post_id' => 'required|exists:posts,id',
+            'comment' => 'required',
         ];
+    }
+    public function failedValidation(Validator $validator)
+    {
+        $errorMessage = implode(', ', $validator->errors()->all());
+
+        throw new HttpResponseException(response()->json([
+            'status'   => false,
+            'action' => $errorMessage
+        ]));
     }
 }
