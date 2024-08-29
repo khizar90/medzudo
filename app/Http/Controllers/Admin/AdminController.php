@@ -35,11 +35,7 @@ class AdminController extends Controller
     public function users(Request $request, $type)
     {
 
-        if ($type == 'organization') {
-            $users = User::where('account_type', $type)->where('request_verify', 1)->latest()->paginate(20);
-        } else {
-            $users = User::where('account_type', $type)->latest()->paginate(20);
-        }
+        $users = User::where('account_type', $type)->latest()->paginate(20);
         // if ($request->ajax()) {
         //     $query = $request->input('query');
         //     $users = User::where('account_type', $type);
@@ -75,9 +71,10 @@ class AdminController extends Controller
         return response()->download(storage_path('users.csv'))->deleteFileAfterSend(true);
     }
 
-    public function deleteUser($user_id){
+    public function deleteUser($user_id)
+    {
         $user = User::find($user_id);
-        if($user){
+        if ($user) {
             $user->delete();
         }
         return redirect()->back();
