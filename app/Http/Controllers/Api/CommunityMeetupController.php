@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\FileUploadAction;
+use App\Actions\User\UserProfileAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Community\Meetup\CreateCommunityMeetupRequest;
 use App\Models\Community;
@@ -28,9 +30,8 @@ class CommunityMeetupController extends Controller
         $create->mode = $request->mode;
         $create->description = $request->description;
         $file = $request->file('cover');
-        $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/meetup', $file);
-        $create->cover = '/uploads/' . $path;
-
+        $path = FileUploadAction::handle('user/' . $user->uuid . '/community/meetup', $file);
+        $create->cover = $path;
         $create->start_time = $request->start_time ?: '';
         $create->start_timestamp = $request->start_timestamp ?: '';
         $create->end_timestamp = $request->end_timestamp ?: '';
@@ -46,8 +47,8 @@ class CommunityMeetupController extends Controller
         $create->cme_point = $request->cme_point ?: '';
         if ($request->has('file')) {
             $file1 = $request->file('file');
-            $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/meetup', $file1);
-            $create->file = '/uploads/' . $path;
+            $path = FileUploadAction::handle('user/' . $user->uuid . '/community/meetup', $file1);
+            $create->file = $path;
         }
         $create->save();
 
@@ -75,8 +76,8 @@ class CommunityMeetupController extends Controller
             $create->description = $request->description;
             if ($request->has('cover')) {
                 $file = $request->file('cover');
-                $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/meetup', $file);
-                $create->cover = '/uploads/' . $path;
+                $path = FileUploadAction::handle('user/' . $user->uuid . '/community/meetup', $file);
+                $create->cover = $path;
             }
 
             $create->start_time = $request->start_time ?: '';
@@ -95,8 +96,8 @@ class CommunityMeetupController extends Controller
 
             if ($request->has('file')) {
                 $file1 = $request->file('file');
-                $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/meetup', $file1);
-                $create->cover = '/uploads/' . $path;
+                $path = FileUploadAction::handle('user/' . $user->uuid . '/community/meetup', $file1);
+                $create->cover = $path;
             }
             $create->save();
 
@@ -203,7 +204,7 @@ class CommunityMeetupController extends Controller
         $user = User::find($request->user()->uuid);
         $meetup = CommunityMeetup::find($meetup_id);
         if ($meetup) {
-            $owner = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $meetup->user_id)->first();
+            $owner = UserProfileAction::userCommon($meetup->user_id,$user->uuid);
             $meetup->participant_count = CommunityMeetupJoinRequest::where('meetup_id', $meetup_id)->where('status', 'accept')->count();
             $meetup->join_request_count = CommunityMeetupJoinRequest::where('meetup_id', $meetup_id)->where('status', 'pending')->count();
             $participantIds = CommunityMeetupJoinRequest::where('meetup_id', $meetup_id)->where('status', 'accept')->pluck('user_id');
@@ -214,7 +215,7 @@ class CommunityMeetupController extends Controller
             if ($request_check) {
                 // if ($request_check->status == 'accept') {
                 $meetup->is_join = true;
-                // }    
+                // }
             } else {
                 $meetup->is_join = false;
             }
@@ -242,8 +243,11 @@ class CommunityMeetupController extends Controller
     }
     public function participantList(Request $request, $meetup_id)
     {
+        $user = User::find($request->user()->uuid);
         $participantIds = CommunityMeetupJoinRequest::where('meetup_id', $meetup_id)->where('status', 'accept')->pluck('user_id');
-        $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->paginate(25);
+        $participants = User::whereIn('uuid', $participantIds)->pluck('uuid')->toArray();
+        $participants = UserProfileAction::userListWithPaging($participants, 12,$user->uuid);
+
         return response()->json([
             'status' => true,
             'action' => 'Participants List',

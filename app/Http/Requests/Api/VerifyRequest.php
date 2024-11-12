@@ -24,7 +24,7 @@ class VerifyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|unique:users,email|email',
+            'email' => 'required|unique:users,email|email|email:rfc,dns',
         ];
     }
     public function messages()

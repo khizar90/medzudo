@@ -25,7 +25,6 @@ class GetVerifyRequest extends FormRequest
     {
         return [
             'image' => 'required',
-            'user_id' => 'required|exists:users,uuid',
         ];
     }
     public function failedValidation(Validator $validator)

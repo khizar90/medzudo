@@ -36,7 +36,6 @@ class User extends Model
         'password',
         'remember_token',
         'updated_at',
-        'created_at'
     ];
 
     /**
@@ -50,7 +49,8 @@ class User extends Model
     // ];
 
     protected $attributes = [
-        'about' => ''
+        'about' => '',
+     
     ];
 
     public function uniqueIds(): array

@@ -53,8 +53,7 @@ class ForgotOtp extends Mailable
 
     public function build()
     {
-        return $this->from('support@medzudo.co', 'Medzudo')
-        ->subject('Medzudo')
+        return $this->subject('Medzudo')
         ->view('forgotOtp')
         ->with([
             'mailDetails'=> $this->mailDetails['body'],

@@ -17,6 +17,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use stdClass;
 
 class EventController extends Controller
@@ -24,16 +25,10 @@ class EventController extends Controller
     public function create(CreateEventRequest $request)
     {
         $create = new Event();
-
         if ($request->hasFile('media')) {
             $file = $request->file('media');
-            // $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/profile', $file);
-            // $path = Storage::disk('s3')->url($path);
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $request->user_id . '/event/', $filename))
-                $path =  '/uploads/user/' . $request->user_id . '/event/' . $filename;
+             $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/event', $file);
+             $path = Storage::disk('s3')->url($path);
             $create->media = $path;
         }
 
@@ -74,15 +69,11 @@ class EventController extends Controller
 
 
         if ($request->hasFile('media')) {
+            if($create->media != '')
+                Storage::disk('s3')->delete($create->media);
             $file = $request->file('media');
-            // $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/profile', $file);
-            // $path = Storage::disk('s3')->url($path);
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $request->user_id . '/event/', $filename))
-                $path =  '/uploads/user/' . $request->user_id . '/event/' . $filename;
-            $create->media = $path;
+             $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/event', $file);
+             $path = Storage::disk('s3')->url($path);
             $create->media = $path;
         }
 

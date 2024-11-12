@@ -65,8 +65,64 @@
                             <tbody id="">
                                 @foreach ($reports as $item)
                                     <tr>
-                                        <td>{{ $item->user->username }}</td>
-                                        <td>{{ $item->reported_user->username }}</td>
+                                        <td class="sorting_1">
+                                            <div class="d-flex justify-content-start align-items-center user-name">
+                                                @if ($item->user->image)
+                                                    <div class="avatar-wrapper">
+                                                        <div class="avatar avatar-sm me-3"><img
+                                                                src="https://d38vqtrl6p25ob.cloudfront.net/{{ $item->user->image }}"
+                                                                alt="Avatar" class="rounded-circle">
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <div class="avatar-wrapper">
+                                                        <div class="avatar avatar-sm me-3"><span
+                                                                class="avatar-initial rounded-circle bg-label-danger">
+                                                                {{ strtoupper(substr($item->user->first_name, 0, 2)) }}</span>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+
+
+                                                <div class="d-flex flex-column"><a
+                                                        href="{{ url('dashboard/user/individual/profile/' . $item->user->uuid) }}"
+                                                        class="text-body text-truncate"><span
+                                                            class="fw-semibold user-name-text">{{ $item->user->first_name }}
+                                                            {{ $item->user->last_name }}</span></a><small
+                                                        class="text-muted">&#64;{{ $item->user->email }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="sorting_1">
+                                            <div class="d-flex justify-content-start align-items-center user-name">
+                                                @if ($item->reported_user->image)
+                                                    <div class="avatar-wrapper">
+                                                        <div class="avatar avatar-sm me-3"><img
+                                                                src="https://d38vqtrl6p25ob.cloudfront.net/{{ $item->reported_user->image }}"
+                                                                alt="Avatar" class="rounded-circle">
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <div class="avatar-wrapper">
+                                                        <div class="avatar avatar-sm me-3"><span
+                                                                class="avatar-initial rounded-circle bg-label-danger">
+                                                                {{ strtoupper(substr($item->reported_user->first_name, 0, 2)) }}</span>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+
+
+                                                <div class="d-flex flex-column"><a
+                                                        href="{{ url('dashboard/user/individual/profile/' . $item->reported_user->uuid) }}"
+                                                        class="text-body text-truncate"><span
+                                                            class="fw-semibold user-name-text">{{ $item->reported_user->first_name }}
+                                                            {{ $item->reported_user->last_name }}</span></a><small
+                                                        class="text-muted">&#64;{{ $item->reported_user->email }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td>{{ $item->message }}</td>
                                         <td class="detailbtn">
                                             <a href="javascript:;" class="text-body dropdown-toggle hide-arrow"
@@ -75,7 +131,8 @@
                                                 <a href="#" data-id="{{ $item->id }}"
                                                     class="dropdown-item deleteReport">Delete Report
                                                 </a>
-                                                <a href="#" data-id="{{ $item->id }}" data-user_id="{{ $item->reported_user->uuid }}"
+                                                <a href="#" data-id="{{ $item->id }}"
+                                                    data-user_id="{{ $item->reported_user->uuid }}"
                                                     class="dropdown-item deleteUser">Delete User
                                                 </a>
 

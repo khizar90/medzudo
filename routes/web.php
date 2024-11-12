@@ -1,41 +1,36 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminCommunityController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminTicketController;
 use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\ReportController;
-use App\Http\Controllers\Api\CertificateController;
-use App\Http\Controllers\ProfileController;
-use App\Models\Admin;
-use Illuminate\Support\Facades\Hash;
+use App\Http\Controllers\Api\Web\ShareableController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
+Route::view('/', 'welcome');
 
-Route::get('/insert', function () {
-    $user = new Admin();
-    $user->name = 'Kevin Anderson';
-    $user->email = 'admin@admin.com';
-    $user->password = Hash::make('qweqwe');
-    $user->save();
+Route::get('apple-app-site-association', function () {
+    $data = new stdClass();
+    $applinks = new stdClass();
+    $applinks->apps = [];
+    $details = [];
+    $obj = new stdClass();
+    $obj->appID = '4354C49Z92.com.medzudo.application';
+    $obj->paths = ['/*'];
+    $details[] = $obj;
+    $applinks->details = $details;
+    $data->applinks = $applinks;
+    return response()->json($data);
 });
-Route::get('/', function () {
-    return view('welcome');
-});
+
+Route::get('user/shareable/{type}/{loginId}/{id}', [ShareableController::class, 'user']);
+Route::get('shareable/{type}/{loginId}/{id}', [ShareableController::class, 'other']);
 
 Route::prefix('dashboard')->middleware(['auth'])->name('dashboard-')->group(function () {
     Route::get('/', [AdminController::class, 'index']);
     Route::get('users/{type}', [AdminController::class, 'users'])->name('users');
+    Route::get('user/{type}/profile/{user_id}', [AdminController::class, 'userProfile'])->name('user-profile');
     Route::get('users/export', [AdminController::class, 'exportCSV'])->name('users-export-csv');
     Route::get('verify-users', [AdminController::class, 'verifyUsers'])->name('verify-users');
     Route::get('get-verify/{type}/{id}', [AdminController::class, 'getVerify'])->name('get-verify');
@@ -53,8 +48,11 @@ Route::prefix('dashboard')->middleware(['auth'])->name('dashboard-')->group(func
         Route::get('event/delete/{event_id}/{report_id}', [AdminReportController::class, 'deleteEvent'])->name('delete-event');
     });
 
-
-
+    Route::prefix('community')->name('community-')->group(function () {
+        Route::get('/', [AdminCommunityController::class, 'analytics']);
+        Route::get('list', [AdminCommunityController::class, 'list'])->name('list');
+        Route::get('/delete/{community_id}', [AdminCommunityController::class, 'delete'])->name('delete');
+    });
 
     Route::prefix('faqs')->name('faqs-')->group(function () {
         Route::get('/', [AdminController::class, 'faqs']);
@@ -70,18 +68,14 @@ Route::prefix('dashboard')->middleware(['auth'])->name('dashboard-')->group(func
         Route::get('messages/{from_to}', [AdminTicketController::class, 'messages'])->name('messages');
         Route::post('send-message', [AdminTicketController::class, 'sendMessage'])->name('send-message');
     });
-
-    Route::prefix('category')->name('category-')->group(function () {
-        Route::get('/{type}', [CategoryController::class, 'list']);
-        Route::post('/add', [CategoryController::class, 'add'])->name('add');
-        Route::post('/edit/{id}', [CategoryController::class, 'edit'])->name('edit');
-        Route::get('/delete/{id}', [CategoryController::class, 'delete'])->name('delete');
-        Route::prefix('sub')->name('sub-')->group(function () {
-            Route::get('/{type}/{id}', [CategoryController::class, 'subList']);
-            Route::post('/create', [CategoryController::class, 'subCreate'])->name('create');
-        });
+    Route::prefix('version')->name('version-')->group(function () {
+        Route::get('/{type}', [AdminController::class, 'version']);
+        Route::post('save/{type}', [AdminController::class, 'versionSave'])->name('save');
     });
-
+    Route::get('emergency', [AdminController::class, 'emergency'])->name('emergency');
+    Route::get('emergency/check/{name}/{value}', [AdminController::class, 'emergencyCheck'])->name('emergency-check');
+    Route::post('emergency/message/', [AdminController::class, 'emergencyMessage'])->name('emergency-message');
+    
     Route::get('send-notification', [AdminController::class, 'createSendNotification'])->name('send-notification');
     Route::post('send-notification', [AdminController::class, 'sendNotification'])->name('create-notification');
 });

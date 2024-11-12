@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\BlockedUser;
+use App\Actions\FileUploadAction;
+use App\Actions\User\UserProfileAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Community\Post\CommunityCreatePostRequest;
 use App\Http\Requests\Api\Community\Post\CommunityPostCommentRequest;
 use App\Http\Requests\Api\Community\Post\CommunityPostVoteRequest;
-use App\Models\Community;
+
 use App\Models\CommunityMedia;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostComment;
@@ -15,22 +18,14 @@ use App\Models\CommunityPostLike;
 use App\Models\CommunityPostSave;
 use App\Models\CommunityPostVote;
 use App\Models\User;
-use FFMpeg\Coordinate\TimeCode;
-use FFMpeg\FFMpeg;
+use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
+use FFMpeg\Format\Video\X264;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 class CommunityPostController extends Controller
 {
-    function getVideoThumb($path)
-    {
-        $ffmpeg = FFMpeg::create();
-        $video = $ffmpeg->open(public_path($path));
-        $thumbnailFileName = time() . '-' . uniqid() . '.jpg';
-        $thumbnailPath = '/uploads/thumbnails/' . $thumbnailFileName;
-        $video->frame(TimeCode::fromSeconds(1))->save(public_path($thumbnailPath));
-        return $thumbnailPath;
-    }
 
     public function create(CommunityCreatePostRequest $request)
     {
@@ -40,11 +35,11 @@ class CommunityPostController extends Controller
         $imagePaths = [];
         if ($request->type == 'image') {
             foreach ($request->media as $file) {
-                $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/post', $file);
-                $imagePaths[] = '/uploads/' . $path;
+                $path = FileUploadAction::handle('user/' . $user->uuid . '/community/post', $file);
+                $imagePaths[] = $path;
             }
-
-            $imagePath = public_path($imagePaths[0]);
+            $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/post', $file);
+            $imagePath = public_path('uploads/' . $path);
             list($width, $height) = getimagesize($imagePath);
             $size = $width / $height;
             $size = number_format($size, 2);
@@ -53,22 +48,28 @@ class CommunityPostController extends Controller
             $mediaString  = implode(',', $imagePaths);
             $create->media = $mediaString;
             $create->size = $size;
+            Storage::disk('local')->delete($path);
         }
         if ($request->type == 'video') {
-            foreach ($request->media as $file) {
-                $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/post', $file);
-                $imagePaths[] = '/uploads/' . $path;
+            foreach ($request->media as $index => $file) {
+                $path = FileUploadAction::handle('user/' . $user->uuid . '/community/post', $file);
+                if ($index == 0) {
+                    $path1 = $path;
+                }
+                $imagePaths[] = $path;
             }
-
-            $thumbnailPath = $this->getVideoThumb($imagePaths[0]);
-            $create->thumbnail = $thumbnailPath;
-
-            $imagePath = public_path($thumbnailPath);
-            list($width, $height) = getimagesize($imagePath);
-            $size = $width / $height;
-            $size = number_format($size, 2);
-
-            $create->thumbnail = $thumbnailPath;
+            $filename = uniqid() . 'thumb.png';
+            FFMpeg::fromDisk('s3')->open($path1)->getFrameFromSeconds(02)->export()->inFormat(new X264)->save($filename);
+            $thumbnail = Storage::disk('s3')->path($filename);
+            $create->thumbnail = $thumbnail;
+            $storedPublic = Storage::disk('local')->putFile($path1, $file);
+            FFMpeg::fromDisk('local')->open($storedPublic)->getFrameFromSeconds(02)->export()->inFormat(new X264)->save($filename);
+            $sizeDetail = getimagesize(Storage::disk('local')->path($filename));
+            if ($sizeDetail)
+                $size = number_format($sizeDetail[0] / $sizeDetail[1], 2, '.', '');
+            if (File::exists(public_path('/uploads/' . $filename)))
+                File::delete(public_path('/uploads/' . $filename));
+            Storage::disk('local')->delete($storedPublic);
             $mediaString  = implode(',', $imagePaths);
             $create->media = $mediaString;
             $create->size = $size;
@@ -195,7 +196,7 @@ class CommunityPostController extends Controller
     public function comment(CommunityPostCommentRequest $request)
     {
         $post = CommunityPost::find($request->post_id);
-        $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $request->user()->uuid)->first();
+        $user = UserProfileAction::userCommon($request->user()->uuid,$request->user()->uuid);
         $comment  = new CommunityPostComment();
         $comment->post_id = $request->post_id;
         $comment->user_id = $user->uuid;
@@ -219,7 +220,7 @@ class CommunityPostController extends Controller
     {
         $post = CommunityPostComment::find($comment_id);
         if ($post) {
-            CommunityPostComment::where('parent_id',$post->id)->delete();
+            CommunityPostComment::where('parent_id', $post->id)->delete();
             $post->delete();
             return response()->json([
                 'status' => true,
@@ -293,14 +294,15 @@ class CommunityPostController extends Controller
     public function commentList(Request $request, $post_id)
     {
         $user = User::find($request->user()->uuid);
+        $blocked = BlockedUser::handle($user->uuid);
 
         $post = CommunityPost::find($post_id);
         if ($post) {
 
-            $comments = CommunityPostComment::where('post_id', $post->id)->where('parent_id', 0)->paginate(12);
+            $comments = CommunityPostComment::whereNotIn('user_id', $blocked)->where('post_id', $post->id)->where('parent_id', 0)->paginate(12);
 
             foreach ($comments as $comment) {
-                $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $comment->user_id)->first();
+                $user = UserProfileAction::userCommon($comment->user_id,$user->uuid);
                 $likes = CommunityPostCommentLike::where('comment_id', $comment->id)->count();
                 $replies = CommunityPostComment::where('parent_id', $comment->id)->count();
                 $comment->likes = $likes;
@@ -331,10 +333,11 @@ class CommunityPostController extends Controller
     public function commentReplies(Request $request, $comment_id)
     {
         $user = User::find($request->user()->uuid);
+        $blocked = BlockedUser::handle($user->uuid);
 
-        $comments = CommunityPostComment::where('parent_id', $comment_id)->get();
+        $comments = CommunityPostComment::whereNotIn('user_id', $blocked)->where('parent_id', $comment_id)->get();
         foreach ($comments as $comment) {
-            $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $comment->user_id)->first();
+            $user = UserProfileAction::userCommon($comment->user_id,$user->uuid);
             $likes = CommunityPostCommentLike::where('comment_id', $comment->id)->count();
             // $replies = Comment::where('parent_id', $comment->id)->count();
             $comment->likes = $likes;
@@ -364,10 +367,13 @@ class CommunityPostController extends Controller
     public function likeList(Request $request, $post_id)
     {
         $user = User::find($request->user()->uuid);
+        $blocked = BlockedUser::handle($user->uuid);
+
         $post = CommunityPost::find($post_id);
         if ($post) {
-            $likes = CommunityPostLike::where('post_id', $post_id)->pluck('user_id');
-            $users =  User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $likes)->Paginate(10);
+            $likes = CommunityPostLike::whereNotIn('user_id', $blocked)->where('post_id', $post_id)->pluck('user_id');
+            $users =  User::whereIn('uuid', $likes)->pluck('uuid')->toArray();
+            $users = UserProfileAction::userListWithPaging($users, 10,$user->uuid);
             return response()->json([
                 'status' => true,
                 'action' =>  "Users",
@@ -386,14 +392,14 @@ class CommunityPostController extends Controller
         $post = CommunityPost::find($post_id);
 
         if ($post) {
-            $postby = User::where('uuid', $post->user_id)->select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->first();
+            $postby = UserProfileAction::userCommon($post->user_id,$user->uuid);
             $comment_count = CommunityPostComment::where('post_id', $post->id)->count();
             $like_count = CommunityPostLike::where('post_id', $post->id)->count();
             $likestatus = CommunityPostLike::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
             $saved = CommunityPostSave::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
             $post->media = empty($post->media) ? [] : explode(',', $post->media);
             $likes = CommunityPostLike::where('post_id', $post->id)->latest()->limit(3)->pluck('user_id');
-            $like_users = User::select('uuid', 'first_name', 'last_name')->whereIn('uuid', $likes)->where('uuid', '!=', $user->uuid)->get();
+            $like_users = User::select('uuid', 'first_name', 'last_name', 'image')->whereIn('uuid', $likes)->where('uuid', '!=', $user->uuid)->get();
             if ($likestatus) {
                 $post->is_liked = true;
             } else {

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\BlockedUser;
+use App\Actions\FileUploadAction;
+use App\Actions\User\UserProfileAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Community\CommunityAddFolderRequest;
 use App\Http\Requests\Api\Community\CommunityAddMediaRequest;
@@ -38,15 +41,13 @@ use App\Models\CommunityPostLike;
 use App\Models\CommunityPostSave;
 use App\Models\CommunityPostVote;
 use App\Models\CommunityPurchase;
-use App\Models\CommunitySectionSeen;
-use App\Models\CommunitySectionVideoSeen;
 use App\Models\CommunitySponsor;
 use App\Models\Follow;
 use App\Models\User;
+use FFMpeg\Format\Video\X264;
+use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use FFMpeg\Coordinate\TimeCode;
-use FFMpeg\FFMpeg;
 use stdClass;
 use PDF;
 
@@ -60,19 +61,11 @@ class CommunityController extends Controller
 
         if ($request->hasFile('cover')) {
             $file = $request->file('cover');
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $user->uuid . '/community/cover', $filename))
-                $path = '/uploads/user/' . $user->uuid . '/community/cover/' . $filename;
+            $path = FileUploadAction::handle('user/'  .  $user->uuid . '/community/cover', $file);
         }
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $user->uuid . '/community/logo', $filename))
-                $path1 = '/uploads/user/' . $user->uuid . '/community/logo/' . $filename;
+            $path1 = FileUploadAction::handle('user/'  .  $user->uuid . '/community/logo', $file);
         }
         $create = new Community();
         $create->user_id = $user->uuid;
@@ -121,20 +114,12 @@ class CommunityController extends Controller
 
         if ($request->hasFile('cover')) {
             $file = $request->file('cover');
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $user->uuid . '/community/cover', $filename))
-                $path = '/uploads/user/' . $user->uuid . '/community/cover/' . $filename;
+            $path = FileUploadAction::handle('user/'  .  $user->uuid . '/community/cover', $file);
             $create->cover =  $path;
         }
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $user->uuid . '/community/logo', $filename))
-                $path1 = '/uploads/user/' . $user->uuid . '/community/logo/' . $filename;
+            $path1 = FileUploadAction::handle('user/'  .  $user->uuid . '/community/logo', $file);
             $create->logo = $path1;
         }
 
@@ -173,13 +158,8 @@ class CommunityController extends Controller
             foreach ($files as $file) {
                 $picture = new CommunityPicture();
                 $picture->community_id = $request->community_id;
-                $extension = $file->getClientOriginalExtension();
-                $mime = explode('/', $file->getClientMimeType());
-                $filename = time() . '-' . uniqid() . '.' . $extension;
-                if ($file->move('uploads/user/' . $user->uuid . '/community/' . $request->community_id . '/picture', $filename)) {
-                    $path = '/uploads/user/' . $user->uuid . '/community/' . $request->community_id . '/picture/' . $filename;
-                    $picture->picture = $path;
-                }
+                $path = FileUploadAction::handle('user/'  .  $user->uuid . '/community/' . $request->community_id . '/picture', $file);
+                $picture->picture = $path;
                 $picture->save();
             }
         }
@@ -206,17 +186,12 @@ class CommunityController extends Controller
 
         if ($request->has('sponsor_image') && $request->has('sponsor_link')) {
             $file = $request->file('sponsor_image');
-            $sponser = new CommunitySponsor();
-            $sponser->community_id = $request->community_id;
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $user->uuid . '/community/' . $request->community_id . '/sponser', $filename))
-                $path1 = '/uploads/user/' . $user->uuid . '/community/' . $request->community_id . '/sponser/' . $filename;
-            $sponser->image = $path1;
-
-            $sponser->link = $request->sponsor_link;
-            $sponser->save();
+            $sponsor = new CommunitySponsor();
+            $sponsor->community_id = $request->community_id;
+            $path1 = FileUploadAction::handle('user/'  .  $user->uuid . '/community/' . $request->community_id . '/sponsor', $file);
+            $sponsor->image = $path1;
+            $sponsor->link = $request->sponsor_link;
+            $sponsor->save();
         }
 
         $create->save();
@@ -249,6 +224,8 @@ class CommunityController extends Controller
     {
         $sponsor = CommunitySponsor::find($sponsor_id);
         if ($sponsor) {
+            Storage::disk('s3')->delete($sponsor->image);
+
             $sponsor->delete();
             return response()->json([
                 'status' => true,
@@ -265,6 +242,7 @@ class CommunityController extends Controller
     {
         $sponsor = CommunityPicture::find($picture_id);
         if ($sponsor) {
+            Storage::disk('s3')->delete($sponsor->picture);
             $sponsor->delete();
             return response()->json([
                 'status' => true,
@@ -280,7 +258,8 @@ class CommunityController extends Controller
     public function home(Request $request)
     {
         $user = User::find($request->user()->uuid);
-        $categoriesall = Category::select('id', 'name', 'image')->where('type', 'interest')->get();
+        $blocked = BlockedUser::handle($user->uuid);
+        $categoriesAll = Category::select('id', 'name', 'image')->where('type', 'interest')->get();
         $myCommunities = Community::where('user_id', $user->uuid)->latest()->limit(12)->get();
         foreach ($myCommunities as $my) {
             $categoriesIds  = explode(',', $my->categories);
@@ -297,11 +276,11 @@ class CommunityController extends Controller
             if ($is_purchase) {
                 $my->is_purchase = true;
             }
-            $my->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $my->user_id)->first();
+            $my->user = UserProfileAction::userCommon($my->user_id,$user->uuid);
         }
 
 
-        $allCommunities = Community::where('mode', 'Public')->where('user_id', '!=', $user->uuid)->latest()->paginate(12);
+        $allCommunities = Community::whereNotIn('user_id', $blocked)->where('mode', 'Public')->where('user_id', '!=', $user->uuid)->latest()->paginate(12);
 
         foreach ($allCommunities as $all) {
             $categoriesIds  = explode(',', $all->categories);
@@ -318,16 +297,16 @@ class CommunityController extends Controller
             if ($is_purchase) {
                 $all->is_purchase = true;
             }
-            $all->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $all->user_id)->first();
+            $all->user = UserProfileAction::userCommon($all->user_id,$user->uuid);
         }
 
-        $request_count = CommunityJoinRequest::where('user_id', $user->uuid)->where('status', 'penidng')->count();
+        $request_count = CommunityJoinRequest::where('user_id', $user->uuid)->where('status', 'pending')->count();
         return response()->json([
             'status' => true,
             'action' =>  'Home',
             'data' =>  array(
                 'request_count' => $request_count,
-                'categories' => $categoriesall,
+                'categories' => $categoriesAll,
                 'my_community' => $myCommunities,
                 'all_community' => $allCommunities,
             ),
@@ -337,6 +316,7 @@ class CommunityController extends Controller
     public function list(Request $request, $type)
     {
         $user = User::find($request->user()->uuid);
+
         if ($type == 'my-communities') {
             $communities = Community::where('user_id', $user->uuid)->latest()->paginate(12);
             foreach ($communities as $item) {
@@ -347,14 +327,14 @@ class CommunityController extends Controller
                 $item->pictures = $pictures;
                 $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->count();
                 $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->pluck('user_id');
-                $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+                $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
                 $item->participants = $participants;
                 $is_purchase = CommunityPurchase::where('user_id', $user->uuid)->where('community_id', $item->id)->first();
                 $item->is_purchase = false;
                 if ($is_purchase) {
                     $item->is_purchase = true;
                 }
-                $item->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $item->user_id)->first();
+                $item->user = UserProfileAction::userCommon($item->user_id,$user->uuid);
             }
         }
         return response()->json([
@@ -367,8 +347,9 @@ class CommunityController extends Controller
     public function search(Request $request)
     {
         $user = User::find($request->user()->uuid);
+        $blocked = BlockedUser::handle($user->uuid);
         if ($request->keyword != null || $request->keyword != '') {
-            $communities  = Community::where("name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
+            $communities  = Community::whereNotIn('user_id', $blocked)->where("name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
 
             foreach ($communities as $all) {
                 $categoriesIds  = explode(',', $all->categories);
@@ -385,7 +366,7 @@ class CommunityController extends Controller
                 if ($is_purchase) {
                     $all->is_purchase = true;
                 }
-                $all->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $all->user_id)->first();
+                $all->user = UserProfileAction::userCommon($all->user_id,$user->uuid);
             }
             return response()->json([
                 'status' => true,
@@ -403,9 +384,10 @@ class CommunityController extends Controller
     public function categorySearch(Request $request, $category_id)
     {
         $user = User::find($request->user()->uuid);
+        $blocked = BlockedUser::handle($user->uuid);
 
         $communityIds = CommunityCategories::where('category_id', $category_id)->pluck('community_id');
-        $communities = Community::whereIn('id', $communityIds)->orderBy('id', 'desc')->paginate(12);
+        $communities = Community::whereNotIn('user_id', $blocked)->whereIn('id', $communityIds)->orderBy('id', 'desc')->paginate(12);
         foreach ($communities as $all) {
             $categoriesIds  = explode(',', $all->categories);
             $categories = Category::whereIn('id', $categoriesIds)->get();
@@ -421,7 +403,7 @@ class CommunityController extends Controller
             if ($is_purchase) {
                 $all->is_purchase = true;
             }
-            $all->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $all->user_id)->first();
+            $all->user = UserProfileAction::userCommon($all->user_id,$user->uuid);
         }
         return response()->json([
             'status' => true,
@@ -432,7 +414,9 @@ class CommunityController extends Controller
 
     public function detail(Request $request, $community_id, $type, $sub_type = null)
     {
-        $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $request->user()->uuid)->first();
+        $user = UserProfileAction::userCommon($request->user()->uuid,$request->user()->uuid);
+        $blocked = BlockedUser::handle($user->uuid);
+
         $community = Community::find($community_id);
         $userCheck = CommunityJoinRequest::where('user_id', $user->uuid)->where('community_id', $community_id)->first();
         if ($userCheck) {
@@ -475,15 +459,14 @@ class CommunityController extends Controller
                 $community->pictures = $pictures;
                 $community->participant_count = CommunityJoinRequest::where('community_id', $community->id)->where('status', '!=', 'pending')->count();
                 $participantIds = CommunityJoinRequest::where('community_id', $community->id)->where('status', '!=', 'pending')->pluck('user_id');
-                $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+                $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
                 $community->participants = $participants;
                 $community->sponsor = CommunitySponsor::where('community_id', $community->id)->get();
                 $comIds = CommunityFeatureRequest::where('community_id', $community_id)->where('status', 2)->pluck('request_id');
 
                 $feature = Community::whereIn('id', $comIds)->limit(3)->pluck('cover');
                 $community->feature = $feature;
-                $community->user =  User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $community->user_id)->first();
-
+                $community->user =  UserProfileAction::userCommon($community->user_id,$user->uuid);
                 return response()->json([
                     'status' => true,
                     'user' => $user,
@@ -493,9 +476,9 @@ class CommunityController extends Controller
             }
 
             if ($type == 'feed') {
-                $posts = CommunityPost::where('community_id', $community_id)->latest()->paginate(12);
+                $posts = CommunityPost::whereNotIn('user_id', $blocked)->where('community_id', $community_id)->latest()->paginate(12);
                 foreach ($posts as $post) {
-                    $postby = User::where('uuid', $post->user_id)->select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->first();
+                    $postby = UserProfileAction::userCommon($post->user_id,$user->uuid);
                     $comment_count = CommunityPostComment::where('post_id', $post->id)->count();
                     $like_count = CommunityPostLike::where('post_id', $post->id)->count();
                     $likestatus = CommunityPostLike::where('post_id', $post->id)->where('user_id', $user->uuid)->first();
@@ -556,20 +539,22 @@ class CommunityController extends Controller
 
             if ($type == 'members') {
                 $userIds = CommunityJoinRequest::where('status', '!=', 'pending')->where('community_id', $community_id)->pluck('user_id');
-                $members = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
-
-
+                $members = User::whereIn('uuid', $userIds)->pluck('uuid')->toArray();
+                $members =  UserProfileAction::userList($members,$user->uuid);
                 if ($sub_type == 'moderator') {
                     $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', 'moderator')->pluck('user_id');
-                    $members = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+                    $members = User::whereIn('uuid', $userIds)->pluck('uuid')->toArray();
+                    $members =  UserProfileAction::userList($members,$user->uuid);
                 }
                 if ($sub_type == 'admin') {
                     $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', 'admin')->pluck('user_id');
-                    $members = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+                    $members = User::whereIn('uuid', $userIds)->pluck('uuid')->toArray();
+                    $members =  UserProfileAction::userList($members,$user->uuid);
                 }
                 if ($sub_type == 'owner') {
                     $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', 'owner')->pluck('user_id');
-                    $members = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+                    $members = User::whereIn('uuid', $userIds)->pluck('uuid')->toArray();
+                    $members =  UserProfileAction::userList($members,$user->uuid);
                 }
 
                 foreach ($members as $item) {
@@ -707,10 +692,8 @@ class CommunityController extends Controller
                     $item->pictures = $pictures;
                     $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->count();
                     $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->pluck('user_id');
-                    $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+                    $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
                     $item->participants = $participants;
-
-
                     $check = CommunityFeatureRequest::where('community_id', $community_id)->where('request_id', $item->id)->first();
                     if ($check) {
                         $item->status = $check->status;
@@ -737,16 +720,11 @@ class CommunityController extends Controller
     {
         $user = User::find($request->user()->uuid);
         if ($user) {
-
-            $blocked = BlockList::where('user_id', $user->uuid)->pluck('block_id');
-            $blocked1 = BlockList::where('block_id', $user->uuid)->pluck('user_id');
-            $blocked = $blocked->merge($blocked1);
-
+            $blocked = BlockedUser::handle($user->uuid);
             $followingIds = Follow::where('user_id', $user->uuid)->pluck('follow_id');
-
             $followingIds = Follow::where('user_id', $user->uuid)->whereNotIn('follow_id', $blocked)->pluck('follow_id')->toArray();
-
-            $followings = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $followingIds)->paginate(12);
+            $followings = User::whereIn('uuid', $followingIds)->pluck('uuid')->toArray();
+            $followings = UserProfileAction::userListWithPaging($followings, 12,$user->uuid);
             if (count($followings) > 0) {
 
                 foreach ($followings as $item) {
@@ -763,7 +741,8 @@ class CommunityController extends Controller
                     'data' => $followings
                 ]);
             } else {
-                $users = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', '!=', $user->uuid)->whereNotIn('follow_id', $blocked)->paginate(12);
+                $users = User::where('uuid', '!=', $user->uuid)->whereNotIn('follow_id', $blocked)->pluck('uuid')->toArray();
+                $users = UserProfileAction::userListWithPaging($users, 12,$user->uuid);
                 foreach ($users as $item1) {
                     $find = CommunityJoinRequest::where('user_id', $item1->uuid)->where('community_id', $community_id)->first();
                     if ($find) {
@@ -810,14 +789,10 @@ class CommunityController extends Controller
     public function searchUsers(Request $request, $community_id)
     {
         $user = User::find($request->user()->uuid);
-        $blocked = BlockList::where('user_id', $user->uuid)->pluck('block_id');
-        $blocked1 = Blocklist::where('block_id', $user->uuid)->pluck('user_id');
-        $blocked = $blocked->merge($blocked1);
-
+        $blocked = BlockedUser::handle($user->uuid);
         if ($request->keyword != null || $request->keyword != '') {
-
-            $users  = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereNotIn('uuid', $blocked)->where('uuid', '!=', $user->uuid)->where("first_name", "LIKE", "%" . $request->keyword . "%")->orWhere("last_name", "LIKE", "%" . $request->keyword . "%")->latest()->paginate(12);
-
+            $users  = User::whereNotIn('uuid', $blocked)->where('uuid', '!=', $user->uuid)->where("first_name", "LIKE", "%" . $request->keyword . "%")->orWhere("last_name", "LIKE", "%" . $request->keyword . "%")->pluck('uuid')->toArray();
+            $users = UserProfileAction::userListWithPaging($users, 12,$user->uuid);
             foreach ($users as $item1) {
                 $find = CommunityJoinRequest::where('user_id', $item1->uuid)->where('community_id', $community_id)->first();
                 if ($find) {
@@ -868,7 +843,7 @@ class CommunityController extends Controller
     {
         $find = Community::find($id);
         if ($find) {
-            CommunityPost::where('community_id',$id)->delete();
+            CommunityPost::where('community_id', $id)->delete();
             $find->delete();
             return response()->json([
                 'status' => true,
@@ -887,15 +862,16 @@ class CommunityController extends Controller
         $create = new CommunityMedia();
         $file = $request->file('media');
         $community = Community::find($request->community_id);
-        $path = Storage::disk('local')->put('user/' . $community->user_id . '/community/media', $file);
-        $filename = basename($path);
-        $create->media = '/uploads/' . $path;
+        $path = FileUploadAction::handle('user/' . $community->user_id . '/community/media', $file);
+        $create->media = $path;
         $create->tagline = $request->tagline;
         $create->community_id = $request->community_id;
         $create->type = $request->type;
         if ($request->type == 'video') {
-            $thumbnailPath = $this->getVideoThumb($create->media);
-            $create->thumbnail = $thumbnailPath;
+            $filename = uniqid() . 'thumb.png';
+            FFMpeg::fromDisk('s3')->open($path)->getFrameFromSeconds(02)->export()->inFormat(new X264)->save($filename);
+            $thumbnail = Storage::disk('s3')->path($filename);
+            $create->thumbnail = $thumbnail;
         }
         $create->folder_id = $request->folder_id ?: 0;
         $create->save();
@@ -904,20 +880,12 @@ class CommunityController extends Controller
             'action' =>  'Community media Added',
         ]);
     }
-    function getVideoThumb($path)
-    {
-        $ffmpeg = FFMpeg::create();
-        $video = $ffmpeg->open(public_path($path));
-        $thumbnailFileName = time() . '-' . uniqid() . '.jpg';
-        $thumbnailPath = '/uploads/thumbnails/' . $thumbnailFileName;
-        $video->frame(TimeCode::fromSeconds(1))->save(public_path($thumbnailPath));
-        return $thumbnailPath;
-    }
 
     public function deleteMedia($media_id)
     {
         $find = CommunityMedia::find($media_id);
         if ($find) {
+            Storage::disk('s3')->delete($find->media);
             $find->delete();
             return response()->json([
                 'status' => true,
@@ -1097,15 +1065,14 @@ class CommunityController extends Controller
             $file = $request->file('image');
 
             $path = Storage::disk('local')->put('user/' . $community->user_id . '/community/course', $file);
-
             $imagePath = public_path('/uploads/' . $path);
             list($width, $height) = getimagesize($imagePath);
-
             $size = $width / $height;
             $size = number_format($size, 2);
-
+            Storage::disk('local')->delete($path);
+            $path = FileUploadAction::handle('user/' . $community->user_id . '/community/course', $file);
             $create = new CommunityCourse();
-            $create->image = '/uploads/' . $path;
+            $create->image = $path;
             $create->size = $size;
             $create->user_id = $user->uuid;
             $create->community_id = $request->community_id;
@@ -1133,8 +1100,8 @@ class CommunityController extends Controller
         if ($create) {
             if ($request->has('image')) {
                 $file = $request->file('image');
-                $path = Storage::disk('local')->put('user/' . $community->user_id . '/community/course', $file);
-                $create->image = '/uploads/' . $path;
+                $path = FileUploadAction::handle('user/' . $community->user_id . '/community/course', $file);
+                $create->image = $path;
             }
             if ($request->has('title')) {
                 $create->title = $request->title;
@@ -1197,8 +1164,7 @@ class CommunityController extends Controller
                 $average_seen = 0; // or handle the case when there are no videos
             }
             $course->progress = $average_seen;
-            $course->user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $course->user_id)->first();
-
+            $course->user = UserProfileAction::userCommon($course->user_id,$user->uuid);
             $is_purchase = CommunityCoursePurchase::where('user_id', $user->uuid)->where('course_id', $course->id)->first();
             if ($is_purchase) {
                 $course->is_purchase = true;
@@ -1313,10 +1279,12 @@ class CommunityController extends Controller
         $section = CommunityCourseSection::find($request->section_id);
         $create = new CommunityCourseSectionVideo();
         $file = $request->file('video');
-        $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/course/seaction', $file);
-        $create->video = '/uploads/' . $path;
-        $thumbnailPath = $this->getVideoThumb($create->video);
-        $create->thumbnail = $thumbnailPath;
+        $path = FileUploadAction::handle('user/' . $user->uuid . '/community/course/section', $file);
+        $create->video = $path;
+        $filename = uniqid() . 'thumb.png';
+        FFMpeg::fromDisk('s3')->open($create->video)->getFrameFromSeconds(02)->export()->inFormat(new X264)->save($filename);
+        $thumbnail = Storage::disk('s3')->path($filename);
+        $create->thumbnail = $thumbnail;
         $create->title = $request->title;
         $create->course_id = $section->course_id;
         $create->duration = $request->duration;
@@ -1338,10 +1306,12 @@ class CommunityController extends Controller
         if ($create) {
             if ($request->has('video')) {
                 $file = $request->file('video');
-                $path = Storage::disk('local')->put('user/' . $user->uuid . '/community/course/seaction', $file);
-                $create->video = '/uploads/' . $path;
-                $thumbnailPath = $this->getVideoThumb($create->video);
-                $create->thumbnail = $thumbnailPath;
+                $path = FileUploadAction::handle('user/' . $user->uuid . '/community/course/section', $file);
+                $create->video = $path;
+                $filename = uniqid() . 'thumb.png';
+                FFMpeg::fromDisk('s3')->open($create->video)->getFrameFromSeconds(02)->export()->inFormat(new X264)->save($filename);
+                $thumbnail = Storage::disk('s3')->path($filename);
+                $create->thumbnail = $thumbnail;
             }
             if ($request->has('title')) {
                 $create->title = $request->title;
@@ -1456,11 +1426,11 @@ class CommunityController extends Controller
 
     public function viewCourseCeritificate(Request $request, $course_id)
     {
-        $user = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $request->user()->uuid)->first();
+        $user = UserProfileAction::userCommon($request->user()->uuid,$request->user()->uuid);
         $find = CommunityCourseCertificate::where('user_id', $user->uuid)->where('course_id', $course_id)->first();
         $course = CommunityCourse::find($course_id);
         if ($course) {
-            $course_by = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->where('uuid', $course->user_id)->first();
+            $course_by = UserProfileAction::userCommon($course->user_id,$user->uuid);
             $course->author = $course_by;
         }
         if ($find) {
@@ -1468,13 +1438,13 @@ class CommunityController extends Controller
             $find->user = $user;
             return response()->json([
                 'status' => true,
-                'action' =>  'Ceritficate',
+                'action' =>  'Certificate',
                 'data' =>  $find
             ]);
         }
         return response()->json([
             'status' => false,
-            'action' =>  'Ceritficate not Found',
+            'action' =>  'Certificate not Found',
         ]);
     }
 
@@ -1485,8 +1455,8 @@ class CommunityController extends Controller
         if ($find) {
             if ($request->has('media')) {
                 $file = $request->file('media');
-                $path = Storage::disk('local')->put('user/' . $user->uuid . '/course/certificate', $file);
-                $find->media  = '/uploads/' . $path;
+                $path = FileUploadAction::handle('user/' . $user->uuid . '/course/certificate', $file);
+                $find->media  = $path;
                 $find->save();
                 return response()->json([
                     'status' => true,
@@ -1519,13 +1489,16 @@ class CommunityController extends Controller
 
     public function listSimpleUsers(Request $request, $community_id, $type)
     {
+        $user = User::find($request->user()->uuid);
         if ($type == 'simple') {
             $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', 'accept')->pluck('user_id');
-            $users = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+            $users = User::whereIn('uuid', $userIds)->pluck('uuid')->toArray();
+            $users = UserProfileAction::userList($users,$user->uuid);
         }
         if ($type == 'administrator') {
             $userIds = CommunityJoinRequest::where('community_id', $community_id)->where('status', '!=', 'accept')->where('status', '!=', 'pending')->pluck('user_id');
-            $users = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $userIds)->get();
+            $users = User::whereIn('uuid', $userIds)->pluck('uuid')->toArray();
+            $users = UserProfileAction::userList($users,$user->uuid);
             foreach ($users as $item) {
                 $check = CommunityJoinRequest::where('community_id', $community_id)->where('user_id', $item->uuid)->first();
                 if ($check->status == 'moderator') {
@@ -1587,8 +1560,10 @@ class CommunityController extends Controller
     }
     public function blockList(Request $request, $community_id)
     {
+        $user = User::find($request->user()->uuid);
         $block_ids = CommunityBlockList::where('community_id', $community_id)->pluck('user_id');
-        $blockUsers = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $block_ids)->paginate(12);
+        $blockUsers = User::whereIn('uuid', $block_ids)->pluck('uuid')->toArray();
+        $blockUsers = UserProfileAction::userListWithPaging($blockUsers, 12,$user->uuid);
         foreach ($blockUsers as $block) {
             $block->block = true;
         }
@@ -1610,7 +1585,7 @@ class CommunityController extends Controller
             $item->pictures = $pictures;
             $item->participant_count = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->count();
             $participantIds = CommunityJoinRequest::where('community_id', $item->id)->where('status', '!=', 'pending')->pluck('user_id');
-            $participants = User::select('uuid', 'first_name', 'last_name', 'image', 'email', 'verify', 'account_type', 'username', 'position')->whereIn('uuid', $participantIds)->limit(3)->pluck('image');
+            $participants = User::whereIn('uuid', $participantIds)->limit(3)->pluck('image');
             $item->participants = $participants;
 
 

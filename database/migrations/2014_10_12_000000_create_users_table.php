@@ -46,9 +46,9 @@ return new class extends Migration
             $table->string('carrier')->default('');
             $table->string('phone_number')->default('');
             $table->string('for_training')->default('');
-            $table->integer('no_of_bed')->default(0);
+            $table->string('no_of_bed')->default('0');
             $table->string('special_feature')->default('');
-            $table->string('no_of_employe')->default(0);
+            $table->string('no_of_employe')->default('0');
             $table->string('multi_images')->default('');
             $table->string('website_link')->default('');
             $table->string('linkedin_link')->default('');

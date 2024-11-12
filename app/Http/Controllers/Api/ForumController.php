@@ -17,6 +17,7 @@ use App\Models\SaveForum;
 use App\Models\User;
 use Illuminate\Foundation\Providers\FormRequestServiceProvider;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use stdClass;
 
 class ForumController extends Controller
@@ -26,13 +27,8 @@ class ForumController extends Controller
         $create = new Forum();
         if ($request->hasFile('media')) {
             $file = $request->file('media');
-            // $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/profile', $file);
-            // $path = Storage::disk('s3')->url($path);
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $request->user_id . '/forum/', $filename))
-                $path =  '/uploads/user/' . $request->user_id . '/forum/' . $filename;
+             $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/forum', $file);
+             $path = Storage::disk('s3')->url($path);
             $create->media = $path;
         }
         $create->user_id = $request->user_id;
@@ -52,16 +48,13 @@ class ForumController extends Controller
     {
         $create = Forum::find($request->forum_id);
         if ($request->hasFile('media')) {
+            if($create->media != '')
+                Storage::disk('s3')->delete($create->media);
             $file = $request->file('media');
-            // $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/profile', $file);
-            // $path = Storage::disk('s3')->url($path);
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $request->user_id . '/forum/', $filename))
-                $path =  '/uploads/user/' . $request->user_id . '/forum/' . $filename;
+             $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/forum', $file);
+             $path = Storage::disk('s3')->url($path);
             $create->media = $path;
-        } 
+        }
         $create->category_id = $request->category_id;
         $create->question = $request->question;
         $create->description = $request->description;

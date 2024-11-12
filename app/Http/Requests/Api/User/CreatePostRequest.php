@@ -24,7 +24,7 @@ class CreatePostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'media' => 'required',
+            'media' => 'required_without:caption',
             'type' => 'required'
         ];
     }

@@ -8,7 +8,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class OtpVerifyRequest extends FormRequest
 {
-    
+
     public function authorize(): bool
     {
         return true;
@@ -17,7 +17,7 @@ class OtpVerifyRequest extends FormRequest
     public function rules()
     {
         return [
-            'email' => 'required|email|exists:otp_verifies,email',
+            'email' => 'required|email|exists:otp_verifies,email|email:rfc,dns',
             'otp' => 'required|min:6'
         ];
     }

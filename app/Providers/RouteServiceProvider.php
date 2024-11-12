@@ -33,10 +33,40 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
 
-            Route::prefix('api/community')
-                ->middleware('api')
+            Route::prefix('api/user/auth')
+                ->middleware(['api'])
                 ->namespace($this->namespace)
-                ->group(base_path('routes/community.php'));
+                ->group(base_path('routes/user/auth.php'));
+
+            Route::prefix('api/app')
+                ->middleware(['api'])
+                ->namespace($this->namespace)
+                ->group(base_path('routes/user/app.php'));
+
+            Route::prefix('api/user')
+                ->middleware(['api', 'auth:sanctum'])
+                ->namespace($this->namespace)
+                ->group(base_path('routes/user/user.php'));
+
+            Route::prefix('api/user/message')
+                ->middleware(['api', 'auth:sanctum'])
+                ->namespace($this->namespace)
+                ->group(base_path('routes/user/chat.php'));
+
+            Route::prefix('api/user/group')
+                ->middleware(['api', 'auth:sanctum'])
+                ->namespace($this->namespace)
+                ->group(base_path('routes/user/group.php'));
+
+            Route::prefix('api/user/post')
+                ->middleware(['api', 'auth:sanctum'])
+                ->namespace($this->namespace)
+                ->group(base_path('routes/user/post.php'));
+
+            Route::prefix('api/community')
+                ->middleware(['api', 'auth:sanctum'])
+                ->namespace($this->namespace)
+                ->group(base_path('routes/user/community.php'));
 
             Route::prefix('api/web')
                 ->middleware('api')
@@ -45,6 +75,10 @@ class RouteServiceProvider extends ServiceProvider
 
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
+
+            Route::prefix('general/dashboard')
+                ->middleware(['web', 'auth'])
+                ->group(base_path('routes/general-dashboard.php'));
         });
     }
 }

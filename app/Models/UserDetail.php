@@ -13,4 +13,8 @@ class UserDetail extends Model
         'updated_at',
         'created_at'
     ];
+
+    protected $attributes = [
+        'abstract' => ''
+    ];
 }

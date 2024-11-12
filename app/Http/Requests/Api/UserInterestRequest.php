@@ -24,7 +24,6 @@ class UserInterestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,uuid',
             'categories' => 'required',
         ];
     }

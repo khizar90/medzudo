@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\AppVersions;
+use App\Actions\BetaCode;
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Models\Category;
 use App\Models\Faq;
 use App\Models\User;
+use App\Models\UserBusinessDetail;
 use App\Models\UserInterest;
 use Illuminate\Http\Request;
 use stdClass;
@@ -22,35 +26,33 @@ class SettingController extends Controller
         ]);
     }
 
-    public function splash($user_id = null)
+    public function splash(Request $request, $user_id = null)
     {
+        $media_url = 'https://d38vqtrl6p25ob.cloudfront.net/';
         $obj = new stdClass();
         $obj1 = new stdClass();
-
-        $position = Category::select('id', 'name', 'image')->where('type', 'position')->get();
-        // $report_user = Category::select('id', 'name', 'image')->where('type', 'user')->get();
-        // $report_post = Category::select('id', 'name', 'image')->where('type', 'post')->get();
-        // // $interest = Category::select('id', 'name','image')->where('type', 'interest')->get();
-        // $forum = Category::select('id', 'name', 'image')->where('type', 'forum')->get();
-        // $news = Category::select('id', 'name', 'image')->where('type', 'news')->get();
-        // $events = Category::select('id', 'name', 'image')->where('type', 'event')->get();
-        $obj->position_category = $position;
-        // $obj->report_user_category = $report_user;
-        // $obj->report_post_category = $report_post;
-        // // $obj->interest = $interest;
-        // $obj->forum_category = $forum;
-        // $obj->news_category = $news;
-        // $obj->events_category = $events;
-
+        $appVersions = AppVersions::handle();
+        $beta_code = BetaCode::handle();
         if ($user_id != null) {
-            $user = User::select('uuid', 'first_name', 'last_name', 'type', 'username', 'email', 'image', 'account_type', 'position', 'request_verify', 'verify')->where('uuid', $user_id)->first();
+            $user = User::find($user_id);
             if ($user) {
                 $obj->user = $user;
+                $userDetail = UserBusinessDetail::where('user_id', $user->uuid)->latest()->first();
+                if (!$userDetail) {
+                    $userDetail = new stdClass();
+                }
+                $obj->user->business_detail = $userDetail;
                 $interest = UserInterest::where('user_id', $user->uuid)->first();
                 if ($interest) {
                     $obj->user->interest_add = true;
                 } else {
                     $obj->user->interest_add = false;
+                }
+                $token = $request->bearerToken();
+                if ($token) {
+                    $user->token = $token;
+                } else {
+                    $user->token = '';
                 }
                 $is_delete = false;
             } else {
@@ -67,14 +69,21 @@ class SettingController extends Controller
             'action' => "Splash",
             'is_delete' => $is_delete,
             'data' => $obj,
+            'media_url' => $media_url,
+            'beta_code' => $beta_code,
+            'app_versions' => $appVersions,
+
         ]);
     }
 
     public function categories($type)
     {
-        $categories = Category::select('id', 'name', 'image')->where('type', $type)->get();
+        $categories = Category::select('id', 'name', 'image')->where('type', $type)
+            ->orderByRaw("CASE WHEN name = 'No Title' THEN 0 ELSE 1 END")
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        if ($type == 'individual-profession' ||  $type == 'association-sector' ||  $type == 'society-sector' ||  $type == 'company-sector' ||  $type == 'start-sector' || $type == 'elderly-care'|| $type == 'hospital-department') {
+        if ($type == 'healthcare-profession' || $type == 'stem-profession' || $type == 'management-profession' ||  $type == 'association-sector' ||  $type == 'society-sector' ||  $type == 'company-sector' ||  $type == 'start-sector' || $type == 'elderly-care' || $type == 'hospital-department') {
 
             $profession = Category::select('id', 'name', 'image')->where('type', $type)->get();
             foreach ($profession as $item) {
@@ -92,15 +101,15 @@ class SettingController extends Controller
             ]);
         }
 
-        if ($type == 'hospital-specialization' || $type == 'doctor-specialization'  || $type == 'rehabilitation-specialization' ) {
+        if ($type == 'hospital-specialization' || $type == 'doctor-specialization'  || $type == 'rehabilitation-specialization') {
             $specialization  = Category::select('id', 'name', 'image')->where('type', $type)->get();
             foreach ($specialization as $item) {
                 $sub_specialization  = Category::select('id', 'name', 'image')->where('parent_id', $item->id)->get();
                 $item->sub_specialization = $sub_specialization;
             }
 
-            $department = Category::select('id', 'name', 'image')->where('type','department')->get();
-            $training = Category::select('id', 'name', 'image')->where('type','training')->get();
+            $department = Category::select('id', 'name', 'image')->where('type', 'department')->get();
+            $training = Category::select('id', 'name', 'image')->where('type', 'training')->get();
 
             return response()->json([
                 'status' => true,

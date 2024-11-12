@@ -15,6 +15,7 @@ use App\Models\NewsComment;
 use App\Models\SaveNews;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use stdClass;
 
 class NewsController extends Controller
@@ -24,13 +25,8 @@ class NewsController extends Controller
         $create = new News();
         if ($request->hasFile('media')) {
             $file = $request->file('media');
-            // $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/profile', $file);
-            // $path = Storage::disk('s3')->url($path);
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $request->user_id . '/news/', $filename))
-                $path =  '/uploads/user/' . $request->user_id . '/news/' . $filename;
+             $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/news', $file);
+             $path = Storage::disk('s3')->url($path);
             $create->media = $path;
         }
         $create->user_id = $request->user_id;
@@ -52,14 +48,11 @@ class NewsController extends Controller
         $create = News::find($request->news_id);
 
         if ($request->hasFile('media')) {
+            if($create->media != '')
+                Storage::disk('s3')->delete($create->media);
             $file = $request->file('media');
-            // $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/profile', $file);
-            // $path = Storage::disk('s3')->url($path);
-            $extension = $file->getClientOriginalExtension();
-            $mime = explode('/', $file->getClientMimeType());
-            $filename = time() . '-' . uniqid() . '.' . $extension;
-            if ($file->move('uploads/user/' . $request->user_id . '/news/', $filename))
-                $path =  '/uploads/user/' . $request->user_id . '/news/' . $filename;
+             $path = Storage::disk('s3')->putFile('user/' . $request->user_id . '/news', $file);
+             $path = Storage::disk('s3')->url($path);
             $create->media = $path;
         }
         $create->category_id = $request->category_id;

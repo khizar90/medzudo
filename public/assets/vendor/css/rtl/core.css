@@ -19639,6 +19639,7 @@ html:not([dir=rtl]) .switches-stacked .switch {
 .avatar img {
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 .avatar .avatar-initial {
   position: absolute;

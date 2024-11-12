@@ -91,7 +91,7 @@
                                                 @if ($user->image)
                                                     <div class="avatar-wrapper">
                                                         <div class="avatar avatar-sm me-3"><img
-                                                                src="{{ asset($user->image != '' ? $user->image : 'user.png') }}"
+                                                                src="https://d38vqtrl6p25ob.cloudfront.net/{{ $user->image }}"
                                                                 alt="Avatar" class="rounded-circle">
                                                         </div>
                                                     </div>

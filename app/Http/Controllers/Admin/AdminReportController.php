@@ -126,7 +126,7 @@ class AdminReportController extends Controller
     public function deleteUser($user_id, $report_id)
     {
         $find = User::find($user_id);
-        Report::where('type', 'individual')->orWhere('type', 'organization')->orWhere('type', 'facility')->where('reported_id', $user_id)->delete();
+        Report::where('user_id',$user_id)->orWhere('reported_id',$user_id)->delete();
         $find->delete();
         return redirect()->back();
     }

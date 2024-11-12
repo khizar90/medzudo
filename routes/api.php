@@ -29,62 +29,6 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('user/delete', [AuthController::class, 'deleteAccount']);
-});
-Route::post('user/verify', [AuthController::class, 'verify']);
-Route::post('otp/verify', [AuthController::class, 'otpVerify']);
-Route::post('user/register', [AuthController::class, 'register']);
-Route::post('user/login', [AuthController::class, 'login']);
-Route::post('user/add/interest', [AuthController::class, 'addInterest']);
-Route::get('user/get/interest/{user_id}', [AuthController::class, 'userInterest']);
-Route::post('user/recover', [AuthController::class, 'recover']);
-Route::post('user/new/password', [AuthController::class, 'newPassword']);
-
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('edit/profile', [AuthController::class, 'editProfile']);
-    Route::prefix('user/')->group(function () {
-        Route::post('set/profile', [AuthController::class, 'setProfile']);
-        Route::post('logout', [AuthController::class, 'logout']);
-
-        Route::prefix('post')->group(function () {
-            Route::get('home', [PostController::class, 'home']);
-            Route::post('create', [PostController::class, 'create']);
-            Route::get('repost/{id}', [PostController::class, 'repost']);
-            Route::get('detail/{post_id}', [PostController::class, 'detail']);
-            Route::get('like/{post_id}', [PostController::class, 'like']);
-            Route::get('like/list/{post_id}', [PostController::class, 'likeList']);
-            Route::get('save/{post_id}', [PostController::class, 'save']);
-            Route::get('delete/{post_id}', [PostController::class, 'delete']);
-            Route::post('comment', [PostController::class, 'comment']);
-            Route::get('comment/delete/{comment_id}', [PostController::class, 'deleteComment']);
-            Route::get('comment/list/{post_id}', [PostController::class, 'commentList']);
-        });
-    });
-});
-Route::get('blocklist/{id}', [AuthController::class, 'blockList']);
-Route::post('change/password', [AuthController::class, 'changePassword']);
-Route::post('edit/image', [AuthController::class, 'editImage']);
-Route::get('remove/image/{id}', [AuthController::class, 'removeImage']);
-Route::post('get/verify', [AuthController::class, 'getVerify']);
-Route::post('user/add/detail', [AuthController::class, 'addDetail']);
-Route::get('user/get/detail/{type}/{user_id}', [AuthController::class, 'getDetail']);
-Route::get('user/delete/detail/{id}', [AuthController::class, 'deleteDetail']);
-Route::post('add/department', [AuthController::class, 'addDepartment']);
-Route::post('edit/department', [AuthController::class, 'editDepartment']);
-Route::get('list/department/{id}', [AuthController::class, 'listDepartment']);
-Route::get('list/department/users/{id}', [AuthController::class, 'listDepartmentUser']);
-Route::post('department/add/user', [AuthController::class, 'addDepartmentUser']);
-Route::get('department/delete/user/{id}', [AuthController::class, 'deleteDepartmentUser']);
-Route::get('user/management/{id}', [AuthController::class, 'management']);
-Route::post('user/add/management', [AuthController::class, 'addManagement']);
-Route::post('user/edit/management', [AuthController::class, 'editManagement']);
-Route::get('user/contact/{id}', [AuthController::class, 'contact']);
-Route::post('user/add/contact', [AuthController::class, 'addContact']);
-Route::post('user/edit/contact', [AuthController::class, 'editContact']);
-Route::get('user/delete/gallery/{id}', [AuthController::class, 'deleteGallery']);
-Route::post('user/verify', [AuthController::class, 'verify']);
 
 
 Route::post('add/ticket', [TicketController::class, 'addTicket']);
@@ -92,11 +36,6 @@ Route::get('close/ticket/{ticket_id}', [TicketController::class, 'closeTicket'])
 Route::get('conversation/{id}', [TicketController::class, 'conversation']);
 Route::get('ticket/list/{id}/{status}', [TicketController::class, 'list']);
 
-Route::post('send/message', [MessageController::class, 'sendMessage']);
-
-Route::get('faqs', [SettingController::class, 'faqs']);
-Route::get('splash/{user_id?}', [SettingController::class, 'splash']);
-Route::get('categories/{type}', [SettingController::class, 'categories']);
 
 Route::post('user/forum/create', [ForumController::class, 'create']);
 Route::post('user/forum/edit', [ForumController::class, 'edit']);
@@ -121,7 +60,7 @@ Route::post('user/news/comment', [NewsController::class, 'comment']);
 Route::get('user/news/comment/delete/{id}', [NewsController::class, 'commentDelete']);
 Route::get('user/news/detail/{user_id}/{news_id}', [NewsController::class, 'detail']);
 Route::get('user/news/home/{user_id}', [NewsController::class, 'list']);
-Route::get('user/news/trendings/list/{user_id}', [NewsController::class, 'trending']);
+Route::get('user/news/trending/list/{user_id}', [NewsController::class, 'trending']);
 Route::post('user/news/save', [NewsController::class, 'save']);
 // Route::get('user/news/list/{type}/{user_id}' , [NewsController::class , 'saveList']);
 Route::get('user/news/list/{type}/{user_id}', [NewsController::class, 'userNews']);
@@ -143,16 +82,5 @@ Route::post('user/event/search', [EventController::class, 'search']);
 Route::post('user/event/home', [EventController::class, 'home']);
 Route::get('user/event/join/{event_id}/{user_id}', [EventController::class, 'joinEvent']);
 Route::get('event/join/members/{event_id}', [EventController::class, 'members']);
-
-
-
-
-
-Route::post('user/profile', [UserController::class, 'profile']);
-Route::post('user/block', [UserController::class, 'block']);
-Route::post('follow/user', [UserController::class, 'follow']);
-Route::get('followers/{id}', [UserController::class, 'followers']);
-Route::get('following/{id}', [UserController::class, 'following']);
-
 
 Route::post('user/report', [ReportController::class, 'report']);

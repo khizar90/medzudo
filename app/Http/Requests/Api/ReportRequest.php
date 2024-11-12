@@ -24,7 +24,6 @@ class ReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,uuid',
             'type' => 'required',
             'reported_id' => 'required',
             'message' => 'required',

@@ -21,7 +21,6 @@ class LogoutRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,uuid',
             'device_id' => 'required',
         ];
     }

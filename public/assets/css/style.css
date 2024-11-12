@@ -74,6 +74,7 @@
 
 
 }
+
 .verifymodal .container .reject a {
     color: #FFF !important;
     box-shadow: none !important;
@@ -181,12 +182,13 @@
 .user-profile-header-banner img {
     box-shadow: inset 6px 6px 0 0 rgba(165, 163, 174, 0.15),
         inset -6px 6px 0 0 rgba(165, 163, 174, 0.15);
-    /* box-shadow: inset 0 0 0.375rem -0.25rem rgba(165, 163, 174, 0.15),
-            inset 0 0 0.375rem 0.25rem rgba(165, 163, 174, 0.15); */
 }
 
 .user-profile-header .rounded {
-    border-radius: 2.5rem !important;
+    height: 100px !important;
+    object-fit: cover;
+    object-position: top !important;
+    border-radius: 0.75rem !important;
     /* box-shadow: 0 0 0.375rem 0.25rem rgba(165, 163, 174, 0.15); */
     box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
@@ -244,7 +246,7 @@
 }
 
 .postCard {
-    min-height: 350px ;
+    min-height: 350px;
 }
 
 .postCard .card-img-top {
@@ -252,15 +254,17 @@
     object-fit: cover;
 }
 
-.postCard a i{
+.postCard a i {
     width: 100%;
     text-align: end;
 }
-.videoPost{
+
+.videoPost {
     background-color: rgba(0, 0, 0, 0.7);
     position: relative;
 }
-.videoPost a{
+
+.videoPost a {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -272,11 +276,12 @@
 }
 
 
-.col-card .card-img-top{
+.col-card .card-img-top {
     height: 140px !important;
     width: 100%;
 }
-img{
+
+img {
     cursor: pointer !important;
 }
 
@@ -299,26 +304,108 @@ textarea::-webkit-scrollbar-thumb {
     background-color: #2C84A2 !important;
     color: #000000 !important;
 }
-.h-px{
+
+.h-px {
     min-height: 500px;
-    height: auto ;
+    height: auto;
 }
 
-.menu-item .bg-danger{
-    background-color:  #ff4d4f !important;
+.menu-item .bg-danger {
+    background-color: #ff4d4f !important;
 }
+
 .layout-menu .brandborder {
     background-color: #000000;
     height: 1px;
     opacity: 30%;
 }
+
 .app-brand-text {
     display: flex;
-    align-items: center; /* Vertically align items */
-    justify-content: center; /* Horizontally align items */
-    height: 110px; /* Set the height of the container */
+    align-items: center;
+    /* Vertically align items */
+    justify-content: center;
+    /* Horizontally align items */
+    height: 110px;
+    /* Set the height of the container */
 }
-.app-brand-text img{
+
+.app-brand-text img {
     width: 75%;
     height: auto;
+}
+
+.tabButtonDiv{
+    min-height: 50vh !important;
+    max-height: auto !important;
+}
+.mediaImage img{
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 10px;
+    box-shadow: 0 0.25rem 1.125rem rgba(75, 70, 92, 0.1);
+}
+.mediaImage video{
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 10px;
+    box-shadow: 0 0.25rem 1.125rem rgba(75, 70, 92, 0.1);
+}
+
+.Category-Card {
+    height: 200px !important;
+    position: relative;
+    border-radius: 10px;
+}
+.Category-Card .card-img-top {
+    height: 100%;
+    object-fit: cover;
+    position: relative;
+    border-radius: 10px;
+}
+
+.overlay {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    border-radius: 10px;
+    top: 0;
+    left: 0;
+    background-color: #000000;
+    opacity: 60%;
+    cursor: pointer;
+}
+.card-links {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+.card-links a {
+    display: flex;
+    color: #000;
+    padding: 2px 2px;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+    border: 1px solid #fff;
+    text-align: center;
+    margin-left: 10px !important;
+}
+
+.Category-Card .card-body {
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    padding: 20px 20px;
+}
+
+.Category-Card .card-title a{
+    color: #fff;
 }
